@@ -1,11 +1,10 @@
-import utils2
 import random
 import torch
 from einops import rearrange
 import time
 import numpy as np
 import cv2
-from config import *
+from config.configTrain import *
 
 def process_npdata(np_data, horizon_len, start_idx, device):
     file_data_len = np_data.shape[0]

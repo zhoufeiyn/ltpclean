@@ -14,21 +14,14 @@ from PIL import Image, ImageDraw, ImageFont
 import pickle
 from scipy.ndimage import zoom
 import imageio
-from network.df.config.Config import Config
-from algorithm2 import Algorithm
+from config.Config import (Config)
+from algorithm import Algorithm
 
 def read_model(model_name, ckpt_name, action_space, device='cpu'):
-    if "iris" in model_name:
-        model = importlib.import_module(
-            "network." + "iris" + ".algorithm").Algorithm(model_name, action_space)
-    elif "df" in model_name:
-        model = importlib.import_module(
-            "network." + "df" + ".algorithm").Algorithm(model_name, device)
-    else:
-        raise NotImplementedError
+    model = Algorithm(model_name,device)
     state_dict = torch.load(
         osp.join("ckpt", ckpt_name, "model.pth"),
-        map_location=torch.device(device)
+        map_location=torch.device(device),weights_only=False
     )
     model.load_state_dict(state_dict['network_state_dict'],strict=False)
     model.eval().to(device)

@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 from einops import rearrange
-from .models.diffusion.diffusion_forcing import DiffusionForcingBase
-from .config.Config_DF import ConfigDF
-from .config.Config import Config
-from .models.vae.autoencoder import AutoencoderKL
+from models.diffusion.df_base import DiffusionForcingBase
+from config.Config_DF import ConfigDF
+from config.Config import Config
+from models.vae.autoencoder import AutoencoderKL
 
 class ZetaEnv():
     def __init__(self,zeta):
