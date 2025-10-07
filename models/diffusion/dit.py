@@ -38,8 +38,12 @@ class DiT(nn.Module):
         external_cond_dim=None,
         num_gru_layers=False,
         self_condition=False,
-        config =None,
-
+        config=None,
+        learned_variance=False,
+        learned_sinusoidal_cond=False,
+        random_fourier_cond=False,
+        learned_sinusoidal_dim=16,
+        sinusoidal_pos_emb_theta=10000,
     ):
         super().__init__()
 
@@ -51,19 +55,40 @@ class DiT(nn.Module):
         self.external_cond_dim = external_cond_dim # 1
         self.dit = DiT_models[model_name](in_channels=channels + z_cond_dim) # in_channels = 36
 
-        # time + action embeddings
+        # # time + action embeddings
+        #
+        # time_emb_dim = self.dit.hidden_size // 2
+        # self.time_emb_dim = time_emb_dim
+        # self.external_cond_emb_dim=time_emb_dim
+        #
+        # self.time_mlp = nn.Sequential(
+        #     nn.Linear(time_emb_dim, 4*time_emb_dim), nn.GELU(), nn.Linear(4*time_emb_dim,time_emb_dim)
+        # )
+        # self.external_cond_emb = nn.Sequential(
+        #     nn.Embedding(self.config.world_model_action_num, self.external_cond_emb_dim),
+        #     nn.Flatten())
 
-        time_emb_dim = self.dit.hidden_size // 2
-        self.time_emb_dim = time_emb_dim
-        self.external_cond_emb_dim=time_emb_dim
+        # original code time embeddings
+        time_emb_dim = self.hidden_dim // 2
+        external_cond_emb_dim = self.hidden_dim // 2
+        self.random_or_learned_sinusoidal_cond = learned_sinusoidal_cond or random_fourier_cond
+
+        if self.random_or_learned_sinusoidal_cond:
+            sinu_pos_emb = RandomOrLearnedSinusoidalPosEmb(learned_sinusoidal_dim, random_fourier_cond)
+            fourier_dim = learned_sinusoidal_dim + 1
+        else:
+            sinu_pos_emb = SinusoidalPosEmb(dim, theta=sinusoidal_pos_emb_theta)
+            fourier_dim = dim
 
         self.time_mlp = nn.Sequential(
-            nn.Linear(time_emb_dim, 4*time_emb_dim), nn.GELU(), nn.Linear(4*time_emb_dim,time_emb_dim)
+            sinu_pos_emb, nn.Linear(fourier_dim, time_emb_dim), nn.GELU(), nn.Linear(time_emb_dim, time_emb_dim)
         )
         self.external_cond_emb = nn.Sequential(
-            nn.Embedding(self.config.world_model_action_num, self.external_cond_emb_dim),
+            nn.Embedding(self.config.world_model_action_num, external_cond_emb_dim//self.external_cond_dim),
             nn.Flatten()
         )
+
+
 
         self.out_dim = out_dim
         self.final_conv = nn.Conv2d(channels + z_cond_dim, self.out_dim, 1)
@@ -92,16 +117,26 @@ class DiT(nn.Module):
         if self.z_cond_dim:
             x = torch.cat((z_cond, x), dim=1)
 
-        t_emb = sinusoidal_time_embedding(time,self.time_emb_dim)
-        t_emb = self.time_mlp(t_emb)
+        # t_emb = sinusoidal_time_embedding(time,self.time_emb_dim)
+        # t_emb = self.time_mlp(t_emb)
+        # if self.external_cond_dim:
+        #     if external_cond is None:
+        #         external_cond_emb = torch.zeros((t_emb.shape[0], self.external_cond_emb_dim)).to(t_emb)
+        #     else:
+        #         external_cond_emb = self.external_cond_emb(external_cond.long())
+        #     emb = torch.cat([t_emb, external_cond_emb], -1)
+        # else:
+        #     emb = t_emb
+
+        # original code concantenate emb, external_cond_emb
+        emb = self.time_mlp(time) # (batch_size, hidden_size//2=192)
         if self.external_cond_dim:
             if external_cond is None:
-                external_cond_emb = torch.zeros((t_emb.shape[0], self.external_cond_emb_dim)).to(t_emb)
+                external_cond_emb = torch.zeros((emb.shape[0], self.external_cond_dim)).to(emb)
             else:
-                external_cond_emb = self.external_cond_emb(external_cond.long())
-            emb = torch.cat([t_emb, external_cond_emb], -1)
-        else:
-            emb = t_emb
+                external_cond_emb = self.external_cond_emb(external_cond.long()) # (batch_size, hidden_size//2=192)
+            emb = torch.cat([emb, external_cond_emb], -1)# (batch_size, hidden_size=384)
+
 
         x = self.dit(x,emb)
         if self.config.use_tanh:
