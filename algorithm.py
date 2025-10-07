@@ -3,7 +3,7 @@ import torch.nn as nn
 from einops import rearrange
 from models.diffusion.df_base import DiffusionForcingBase
 from config.Config_DF import ConfigDF
-from config.Config import Config
+from config.Config_VAE import Config
 from models.vae.autoencoder import AutoencoderKL
 
 class ZetaEnv():

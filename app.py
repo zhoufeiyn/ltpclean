@@ -9,7 +9,7 @@ from threading import Thread, Event
 import torch
 import time
 
-from model import get_model, get_data, init_simulator, get_web_img
+from utils import get_model, get_data, init_simulator, get_web_img
 
 """Model info"""
 frame_rate = 1/20

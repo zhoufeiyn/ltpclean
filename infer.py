@@ -5,7 +5,7 @@ import cv2
 import torch
 import numpy as np
 import imageio
-from model import get_model, get_data, get_web_img
+from utils import get_model, get_data, get_web_img
 
 
 def get_jave_7action(key):

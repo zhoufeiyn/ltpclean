@@ -1,56 +1,41 @@
-from omegaconf import DictConfig
 import numpy as np
 from random import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Any, Union, Sequence, Optional
+from typing import Union, Sequence
 from einops import rearrange
 
-from .models.diffusion_transition import DiffusionTransitionModel
+from diffusion_transition import DiffusionTransitionModel
 
 
 class DiffusionForcingBase(nn.Module):
     def __init__(self,config=None,device='cuda:0'):
         super().__init__()
-        from omegaconf import OmegaConf
-        import os
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "df_video_dmlab.yaml")
-        cfg = OmegaConf.load(config_path)
         self.config = config
-        use_mc_config = self.config.use_mc
-        # cfg.context_frames = 16
-        cfg.z_shape = [self.config.zeta, cfg.z_shape[1], cfg.z_shape[2]]
-        if use_mc_config:
-            cfg.z_shape = [32,64,64]
-            cfg.diffusion.cum_snr_decay = 0.96
-            cfg.diffusion.network_size = 64
-            cfg.frame_stack = 8
-            cfg.context_frames = cfg.frame_stack
-            cfg.external_cond_dim = cfg.frame_stack
-        # cfg.z_shape = [32, 64, 64]
-        # cfg.diffusion.network_size = 64
-        cfg.context_frames = self.config.context_len
-        self.cfg = cfg
         self.device = device
-        self.x_shape = cfg.x_shape
-        self.z_shape = cfg.z_shape
-        self.frame_stack = cfg.frame_stack
-        self.cfg.diffusion.cum_snr_decay = self.cfg.diffusion.cum_snr_decay**self.frame_stack
-        self.x_stacked_shape = list(cfg.x_shape)
-        self.x_stacked_shape[0] *= cfg.frame_stack
+        
+        # 直接使用ConfigDF中的参数，不再加载YAML
+        self.x_shape = self.config.x_shape
+        self.z_shape = self.config.z_shape
+        self.frame_stack = self.config.frame_stack
+        self.x_stacked_shape = list(self.config.x_shape)
+        self.x_stacked_shape[0] *= self.config.frame_stack
         self.is_spatial = len(self.x_shape) == 3  # pixel
-        self.gt_cond_prob = cfg.gt_cond_prob  # probability to condition one-step diffusion o_t+1 on ground truth o_t
-        self.gt_first_frame = cfg.gt_first_frame
-        self.context_frames = cfg.context_frames  # number of context frames at validation time
-        self.chunk_size = cfg.chunk_size
-        self.calc_crps_sum = cfg.calc_crps_sum
-        self.external_cond_dim = cfg.external_cond_dim
-        self.uncertainty_scale = cfg.uncertainty_scale
-        self.sampling_timesteps = cfg.diffusion.sampling_timesteps
+        self.gt_cond_prob = self.config.gt_cond_prob  # probability to condition one-step diffusion o_t+1 on ground truth o_t
+        self.gt_first_frame = self.config.gt_first_frame
+        self.context_frames = self.config.context_frames  # number of context frames at validation time
+        self.chunk_size = self.config.chunk_size
+        self.calc_crps_sum = self.config.calc_crps_sum
+        self.external_cond_dim = self.config.external_cond_dim
+        self.uncertainty_scale = self.config.uncertainty_scale
+        self.sampling_timesteps = self.config.sampling_timesteps
+        
+        # 计算cum_snr_decay
+        self.cum_snr_decay = self.config.cum_snr_decay**self.frame_stack
         self.validation_step_outputs = []
         self.min_crps_sum = float("inf")
-        self.learnable_init_z = cfg.learnable_init_z
+        self.learnable_init_z = self.config.learnable_init_z
 
 
         self._build_model()
@@ -79,9 +64,9 @@ class DiffusionForcingBase(nn.Module):
 
     def _build_model(self):
         self.transition_model = DiffusionTransitionModel(
-            self.x_stacked_shape, self.z_shape, self.external_cond_dim, self.cfg.diffusion
-        ,self.config)
-        self.register_data_mean_std(self.cfg.data_mean, self.cfg.data_std)
+            self.x_stacked_shape, self.z_shape, self.external_cond_dim, self.config
+        )
+        self.register_data_mean_std(self.config.data_mean, self.config.data_std)
         if self.learnable_init_z:
             if self.config.use_km:
                 # self.init_z = nn.Parameter(torch.randn(list(self.z_shape)), requires_grad=True)
@@ -97,7 +82,7 @@ class DiffusionForcingBase(nn.Module):
         if self.learnable_init_z:
             transition_params.append(self.init_z)
         optimizer_dynamics = torch.optim.AdamW(
-            transition_params, lr=self.config.lr, weight_decay=self.config.wd, betas=self.cfg.optimizer_beta
+            transition_params, lr=self.config.lr, weight_decay=self.config.wd, betas=self.config.optimizer_beta
         )
 
         return optimizer_dynamics
@@ -131,10 +116,10 @@ class DiffusionForcingBase(nn.Module):
 
         # create the pytorch optimizer object
         optim_groups = [
-            {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": self.cfg.weight_decay},
+            {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": self.config.weight_decay},
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
-        optimizer = torch.optim.AdamW(optim_groups, lr=self.cfg.lr)
+        optimizer = torch.optim.AdamW(optim_groups, lr=self.config.lr)
         return optimizer
 
     def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_closure):
@@ -142,10 +127,10 @@ class DiffusionForcingBase(nn.Module):
         optimizer.step(closure=optimizer_closure)
 
         # manually warm up lr without a scheduler
-        if self.trainer.global_step < self.cfg.warmup_steps:
-            lr_scale = min(1.0, float(self.trainer.global_step + 1) / self.cfg.warmup_steps)
+        if self.trainer.global_step < self.config.warmup_steps:
+            lr_scale = min(1.0, float(self.trainer.global_step + 1) / self.config.warmup_steps)
             for pg in optimizer.param_groups:
-                pg["lr"] = lr_scale * self.cfg.lr
+                pg["lr"] = lr_scale * self.config.lr
 
     def _preprocess_batch(self, batch):
         xs = batch[0]
@@ -296,7 +281,7 @@ class DiffusionForcingBase(nn.Module):
         if endless_mode:
             endless_len = 1000
             conditions = conditions.repeat((endless_len // conditions.shape[0] + 2, 1, 1))[: xs.shape[0]+endless_len]
-            zeros_tensor = torch.zeros((endless_len, self.frame_stack, self.cfg.x_shape[0], self.cfg.x_shape[1], self.cfg.x_shape[-1]),dtype=xs.dtype).to(xs.device)
+            zeros_tensor = torch.zeros((endless_len, self.frame_stack, self.config.x_shape[0], self.config.x_shape[1], self.config.x_shape[-1]),dtype=xs.dtype).to(xs.device)
             xs = torch.cat((xs, zeros_tensor), dim=0)
             ones_tensor = torch.ones((endless_len * self.frame_stack, 1),dtype=masks.dtype).to(xs.device)
             masks = torch.cat((masks, ones_tensor), dim=0)
