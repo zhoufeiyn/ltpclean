@@ -2,8 +2,20 @@ from typing import Tuple
 import torch.nn as nn
 import torch
 import numpy as np
-from .resnet import ResBlockWrapper
 
+
+class ResBlockWrapper(nn.Module):
+    def __init__(self, model: nn.Module, in_planes=None, out_planes=None):
+        super().__init__()
+        self.model = model
+        self.shortcut = (
+            nn.Identity()
+            if in_planes == out_planes
+            else nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, bias=False)
+        )
+
+    def forward(self, x):
+        return self.model(x) + self.shortcut(x)
 
 class ConvRNNCell(nn.Module):
     def __init__(self, channel_multiplier, in_channels, hidden_channels, kernel_size, bias=True):

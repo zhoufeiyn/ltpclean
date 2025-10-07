@@ -16,10 +16,10 @@ class DiffusionForcingBase(nn.Module):
         self.device = device
         
         # 直接使用ConfigDF中的参数，不再加载YAML
-        self.x_shape = self.config.x_shape
-        self.z_shape = self.config.z_shape
+        self.x_shape = self.config.x_shape # (4,32,32)
+        self.z_shape = self.config.z_shape # (32,32,32)
         self.frame_stack = self.config.frame_stack
-        self.x_stacked_shape = list(self.config.x_shape) # (4,32,32) ->[4,32,32]
+        self.x_stacked_shape = list(self.x_shape) # (4,32,32) ->[4,32,32]
         self.x_stacked_shape[0] *= self.config.frame_stack # (4,32,32) ->[4,32,32]
         self.is_spatial = len(self.x_shape) == 3  # pixel
         self.gt_cond_prob = self.config.gt_cond_prob  # probability to condition one-step diffusion o_t+1 on ground truth o_t
@@ -31,8 +31,7 @@ class DiffusionForcingBase(nn.Module):
         self.uncertainty_scale = self.config.uncertainty_scale
         self.sampling_timesteps = self.config.sampling_timesteps
         
-        # 计算cum_snr_decay
-        self.cum_snr_decay = self.config.cum_snr_decay**self.frame_stack
+
         self.validation_step_outputs = []
         self.min_crps_sum = float("inf")
         self.learnable_init_z = self.config.learnable_init_z
@@ -281,7 +280,7 @@ class DiffusionForcingBase(nn.Module):
         if endless_mode:
             endless_len = 1000
             conditions = conditions.repeat((endless_len // conditions.shape[0] + 2, 1, 1))[: xs.shape[0]+endless_len]
-            zeros_tensor = torch.zeros((endless_len, self.frame_stack, self.config.x_shape[0], self.config.x_shape[1], self.config.x_shape[-1]),dtype=xs.dtype).to(xs.device)
+            zeros_tensor = torch.zeros((endless_len, self.frame_stack, self.x_shape[0], self.x_shape[1], self.x_shape[-1]),dtype=xs.dtype).to(xs.device)
             xs = torch.cat((xs, zeros_tensor), dim=0)
             ones_tensor = torch.ones((endless_len * self.frame_stack, 1),dtype=masks.dtype).to(xs.device)
             masks = torch.cat((masks, ones_tensor), dim=0)

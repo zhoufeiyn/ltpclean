@@ -2,13 +2,10 @@ from typing import Optional, Tuple, Union
 
 from random import random
 from collections import namedtuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from .unet import TransitionUnet, TransitionMlp, TransitionDiT
-from .resnet import ResBlock2d
+from .dit import DiT
 from .utils import extract, default, linear_beta_schedule, cosine_beta_schedule, sigmoid_beta_schedule
 
 
@@ -18,14 +15,11 @@ ModelPrediction = namedtuple("ModelPrediction", ["pred_noise", "pred_x_start", "
 class DiffusionTransitionModel(nn.Module):
     def __init__(self, x_shape, z_shape, external_cond_dim,  config):
         super().__init__()
-        self.config = config
-       
         self.x_shape = x_shape  # (4*frame_stack=4*1=4,32,32 ), 默认frame_stack是1
-        self.z_shape = z_shape
+        self.z_shape = z_shape  # (32,32,32)
         self.external_cond_dim = external_cond_dim
-        self.mask_unet = config.mask_unet
+
         self.num_gru_layers = config.num_gru_layers
-        self.num_mlp_layers = config.num_mlp_layers
         self.timesteps = config.timesteps
         self.sampling_timesteps = config.sampling_timesteps
         self.beta_schedule = config.beta_schedule
@@ -50,49 +44,23 @@ class DiffusionTransitionModel(nn.Module):
         self._build_buffer()
 
     def _build_model(self):
-        x_channel = self.x_shape[0]
-        z_channel = self.z_shape[0]
+        x_channel = self.x_shape[0] # 4
+        z_channel = self.z_shape[0] # 32
         if len(self.x_shape) != 1:
-            if self.config.use_dit:
-                self.model = TransitionDiT(
-                    dim=self.x_shape[-1],
-                    z_channel=z_channel,
-                    x_channel=x_channel,
-                    external_cond_dim=self.external_cond_dim,
-                    num_gru_layers=self.num_gru_layers,
-                    self_condition=self.self_condition,
-                    model_name=self.config.dit_name,
-                    config=self.config,
-                )
-            else:
-                self.model = TransitionUnet(
-                    z_channel=z_channel,
-                    x_channel=x_channel,
-                    external_cond_dim=self.external_cond_dim,
-                    network_size=self.network_size,
-                    num_gru_layers=self.num_gru_layers,
-                    self_condition=self.self_condition,
-                )
-            self.x_from_z = nn.Sequential(
-                ResBlock2d(z_channel, x_channel),
-                nn.Conv2d(x_channel, x_channel, 1, padding=0),
-            )
-
-        elif len(self.x_shape) == 1:
-            self.model = TransitionMlp(
-                z_dim=z_channel,
-                x_dim=x_channel,
+            self.model = DiT(
+                model_name=self.config.dit_name,
+                channels=x_channel,
+                out_dim=z_channel,
+                z_cond_dim=z_channel,
                 external_cond_dim=self.external_cond_dim,
-                network_size=self.network_size,
                 num_gru_layers=self.num_gru_layers,
-                num_mlp_layers=self.num_mlp_layers,
                 self_condition=self.self_condition,
-            )
 
-            self.x_from_z = nn.Linear(z_channel, x_channel)
+
+            )
 
         else:
-            raise ValueError(f"x_shape must have 1 or 3 dims but got shape {self.x_shape}")
+            raise ValueError(f"x_shape must have  3 dims but got shape {self.x_shape}")
 
     def _build_buffer(self):
         if self.beta_schedule == "linear":
@@ -273,6 +241,24 @@ class DiffusionTransitionModel(nn.Module):
         loss = loss * loss_weight
 
         return z_next_pred, x_next_pred, loss, cum_snr_next, original_loss
+    def model_predictions(self, x, t, z_cond, external_cond=None, x_self_cond=None):
+        z_next = self.model(x, t, z_cond, external_cond, x_self_cond)
+        model_output = self.x_from_z(z_next)
+
+        if self.objective == "pred_noise":
+            pred_noise = torch.clamp(model_output, -self.clip_noise, self.clip_noise)
+            x_start = self.predict_start_from_noise(x, t, pred_noise)
+
+        elif self.objective == "pred_x0":
+            x_start = model_output
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        elif self.objective == "pred_v":
+            v = model_output
+            x_start = self.predict_start_from_v(x, t, v) # why ?
+            pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        return ModelPrediction(pred_noise, x_start, z_next, model_output)
 
     def predict_start_from_noise(self, x_t, t, noise):
         return (
@@ -306,24 +292,6 @@ class DiffusionTransitionModel(nn.Module):
         posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
-    def model_predictions(self, x, t, z_cond, external_cond=None, x_self_cond=None):
-        z_next = self.model(x, t, z_cond, external_cond, x_self_cond)
-        model_output = self.x_from_z(z_next)
-
-        if self.objective == "pred_noise":
-            pred_noise = torch.clamp(model_output, -self.clip_noise, self.clip_noise)
-            x_start = self.predict_start_from_noise(x, t, pred_noise)
-
-        elif self.objective == "pred_x0":
-            x_start = model_output
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        elif self.objective == "pred_v":
-            v = model_output
-            x_start = self.predict_start_from_v(x, t, v) # why ?
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-
-        return ModelPrediction(pred_noise, x_start, z_next, model_output)
 
     def p_mean_variance(self, x, t, z_cond, external_cond=None, x_self_cond=None):
         model_pred = self.model_predictions(x, t, z_cond, external_cond=external_cond, x_self_cond=x_self_cond)
