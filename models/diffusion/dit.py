@@ -30,6 +30,7 @@ def sinusoidal_time_embedding(t, dim):
 class DiT(nn.Module):
     def __init__(
         self,
+        dim=32,
         model_name=None, # Config_DF.py self.dit_name
         channels=3,  # 4
         out_dim=None, # 32
@@ -37,11 +38,13 @@ class DiT(nn.Module):
         external_cond_dim=None,
         num_gru_layers=False,
         self_condition=False,
+        config =None,
+
     ):
         super().__init__()
 
         # determine dimensions
-
+        self.config = config
         self.channels = channels # 4
         self.self_condition = self_condition
         self.z_cond_dim = z_cond_dim # 32

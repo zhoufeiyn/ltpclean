@@ -7,17 +7,39 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .dit import DiT
 from .utils import extract, default, linear_beta_schedule, cosine_beta_schedule, sigmoid_beta_schedule
-
+from typing import Type
 
 ModelPrediction = namedtuple("ModelPrediction", ["pred_noise", "pred_x_start", "pred_z", "model_out"])
 
+class ResBlock2d(nn.Module):
+    expansion = 1
+
+    def __init__(self, in_planes, planes, stride=1, activation: Type[nn.Module] = nn.ReLU):
+        super(ResBlock2d, self).__init__()
+        self.activation = activation()
+        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+
+        self.shortcut = nn.Identity()
+        if stride != 1 or in_planes != self.expansion * planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+            )
+
+    def forward(self, x):
+        out = self.activation(self.conv1(x))
+        out = self.conv2(out)
+        out += self.shortcut(x)
+        out = self.activation(out)
+        return out
 
 class DiffusionTransitionModel(nn.Module):
-    def __init__(self, x_shape, z_shape, external_cond_dim,  config):
+    def __init__(self, x_shape, z_shape, external_cond_dim, config):
         super().__init__()
         self.x_shape = x_shape  # (4*frame_stack=4*1=4,32,32 ), 默认frame_stack是1
         self.z_shape = z_shape  # (32,32,32)
         self.external_cond_dim = external_cond_dim
+        self.model_name = config.dit_name
 
         self.num_gru_layers = config.num_gru_layers
         self.timesteps = config.timesteps
@@ -36,6 +58,7 @@ class DiffusionTransitionModel(nn.Module):
         self.self_condition = config.self_condition
         self.network_size = config.network_size
         self.return_all_timesteps = config.return_all_timesteps
+        self.config = config
 
         if self.objective not in ["pred_noise", "pred_x0", "pred_v"]:
             raise ValueError("objective must be either pred_noise or pred_x0 or pred_v ")
@@ -48,16 +71,18 @@ class DiffusionTransitionModel(nn.Module):
         z_channel = self.z_shape[0] # 32
         if len(self.x_shape) != 1:
             self.model = DiT(
-                model_name=self.config.dit_name,
+                dim=self.x_shape[-1],
+                model_name=self.model_name,
                 channels=x_channel,
                 out_dim=z_channel,
                 z_cond_dim=z_channel,
                 external_cond_dim=self.external_cond_dim,
                 num_gru_layers=self.num_gru_layers,
                 self_condition=self.self_condition,
-
-
-            )
+                config =self.config)
+            self.x_from_z = nn.Sequential(
+                ResBlock2d(z_channel, x_channel),
+                nn.Conv2d(x_channel, x_channel, 1, padding=0),)
 
         else:
             raise ValueError(f"x_shape must have  3 dims but got shape {self.x_shape}")

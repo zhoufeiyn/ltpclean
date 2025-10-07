@@ -54,7 +54,7 @@ class ConfigDF():
         self.schedule_fn_kwargs = {}
         self.sampling_timesteps = 4
         self.mask_unet = False
-        self.num_gru_layers = False #0
+        self.num_gru_layers = 0 #0
         self.num_mlp_layers = 0
         self.return_all_timesteps = False
         self.clip_noise = 6
