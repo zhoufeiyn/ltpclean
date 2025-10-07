@@ -16,32 +16,32 @@ ModelPrediction = namedtuple("ModelPrediction", ["pred_noise", "pred_x_start", "
 
 
 class DiffusionTransitionModel(nn.Module):
-    def __init__(self, x_shape, z_shape, external_cond_dim, cfg, config):
+    def __init__(self, x_shape, z_shape, external_cond_dim,  config):
         super().__init__()
         self.config = config
-        self.cfg = cfg
-        self.x_shape = x_shape
+       
+        self.x_shape = x_shape  # (4*frame_stack=4*1=4,32,32 ), 默认frame_stack是1
         self.z_shape = z_shape
         self.external_cond_dim = external_cond_dim
-        self.mask_unet = cfg.mask_unet
-        self.num_gru_layers = cfg.num_gru_layers
-        self.num_mlp_layers = cfg.num_mlp_layers
-        self.timesteps = cfg.timesteps
-        self.sampling_timesteps = cfg.sampling_timesteps
-        self.beta_schedule = cfg.beta_schedule
-        self.objective = cfg.objective
-        self.use_snr = cfg.use_snr
-        self.use_cum_snr = cfg.use_cum_snr
-        self.snr_clip = cfg.snr_clip
-        self.cum_snr_decay = cfg.cum_snr_decay
-        self.ddim_sampling_eta = cfg.ddim_sampling_eta
-        self.clip_noise = cfg.clip_noise
-        self.p2_loss_weight_gamma = cfg.p2_loss_weight_gamma
-        self.p2_loss_weight_k = cfg.p2_loss_weight_k
-        self.schedule_fn_kwargs = cfg.schedule_fn_kwargs
-        self.self_condition = cfg.self_condition
-        self.network_size = cfg.network_size
-        self.return_all_timesteps = cfg.return_all_timesteps
+        self.mask_unet = config.mask_unet
+        self.num_gru_layers = config.num_gru_layers
+        self.num_mlp_layers = config.num_mlp_layers
+        self.timesteps = config.timesteps
+        self.sampling_timesteps = config.sampling_timesteps
+        self.beta_schedule = config.beta_schedule
+        self.objective = config.objective
+        self.use_snr = config.use_snr
+        self.use_cum_snr = config.use_cum_snr
+        self.snr_clip = config.snr_clip
+        self.cum_snr_decay = config.cum_snr_decay
+        self.ddim_sampling_eta = config.ddim_sampling_eta
+        self.clip_noise = config.clip_noise
+        self.p2_loss_weight_gamma = config.p2_loss_weight_gamma
+        self.p2_loss_weight_k = config.p2_loss_weight_k
+        self.schedule_fn_kwargs = config.schedule_fn_kwargs
+        self.self_condition = config.self_condition
+        self.network_size = config.network_size
+        self.return_all_timesteps = config.return_all_timesteps
 
         if self.objective not in ["pred_noise", "pred_x0", "pred_v"]:
             raise ValueError("objective must be either pred_noise or pred_x0 or pred_v ")

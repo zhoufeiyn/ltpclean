@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from typing import Union, Sequence
 from einops import rearrange
 
-from diffusion_transition import DiffusionTransitionModel
+from .diffusion_transition import DiffusionTransitionModel
 
 
 class DiffusionForcingBase(nn.Module):
@@ -19,8 +19,8 @@ class DiffusionForcingBase(nn.Module):
         self.x_shape = self.config.x_shape
         self.z_shape = self.config.z_shape
         self.frame_stack = self.config.frame_stack
-        self.x_stacked_shape = list(self.config.x_shape)
-        self.x_stacked_shape[0] *= self.config.frame_stack
+        self.x_stacked_shape = list(self.config.x_shape) # (4,32,32) ->[4,32,32]
+        self.x_stacked_shape[0] *= self.config.frame_stack # (4,32,32) ->[4,32,32]
         self.is_spatial = len(self.x_shape) == 3  # pixel
         self.gt_cond_prob = self.config.gt_cond_prob  # probability to condition one-step diffusion o_t+1 on ground truth o_t
         self.gt_first_frame = self.config.gt_first_frame
