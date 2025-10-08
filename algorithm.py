@@ -26,16 +26,15 @@ class Algorithm(nn.Module):
     # observation (b t), c, h,w = (1,c,h,w),
     # obs[0:1] = (1,c,h,w)
     def init_wm(self,observation):
-        observation = observation[0]
-        print(f'algorithm - init_wm: input img shape:{observation.shape}')
+        observation = observation[0] #[c,h,w]
+        # print(f'algorithm - init_wm: input img shape:{observation.shape}')
         if self.use_ldm:
             latent = self.vae.encode(observation.reshape(-1, 3, Config.resolution, Config.resolution))
-            print(f'algorithm - latent shape:{latent.shape}')
+
             latent = latent.sample() * Config.scale_factor
             latent = latent.reshape(*Config.vae_latent_shape)
             observation = latent
         init_zeta = self.df_model.init_df_model(observation)
-        # env = ZetaEnv(init_zeta)
         return init_zeta
 
     def real_time_infer(self, zeta, cur_act, sampling_timestep):

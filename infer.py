@@ -94,7 +94,9 @@ if __name__ == "__main__":
     sample_step = args.sample_step
 
     model = Algorithm(model_name,device)
-    state_dict = torch.load(os.path.join("ckpt",model_path),strict = False)
+    state_dict = torch.load(os.path.join("ckpt",model_path), map_location=torch.device(model.device), weights_only=False)
+    model.load_state_dict(state_dict['network_state_dict'],strict=False)
+    print("1.Model loaded successfully!")
     model.eval().to(device)
 
     batch_data = {}

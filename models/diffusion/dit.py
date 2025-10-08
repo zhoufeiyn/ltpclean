@@ -1,13 +1,8 @@
 from functools import partial
 import torch
 import torch.nn as nn
-from einops.layers.torch import Rearrange
-import torch.nn.functional as F
-from einops import rearrange, repeat
-from .gru import Conv2dGRUCell
-import math
+
 from .utils import default, exists, cast_tuple, divisible_by
-from .gru import Conv2dGRUCell
 
 from .sin_emb import SinusoidalPosEmb, RandomOrLearnedSinusoidalPosEmb
 
@@ -17,19 +12,15 @@ from .dit_models import DiT_models
 class DiT(nn.Module):
     def __init__(
         self,
-        dim=32,
+        dim=32, #x_shape[-1]
         model_name=None, # Config_DF.py self.dit_name
         channels=3,  # 4
         out_dim=None, # 32
         z_cond_dim=None, # 32
         external_cond_dim=None,
-        num_gru_layers=False,
         self_condition=False,
         config=None,
-        learned_variance=False,
-        learned_sinusoidal_cond=False,
-        random_fourier_cond=False,
-        learned_sinusoidal_dim=16,
+
         sinusoidal_pos_emb_theta=10000,
     ):
         super().__init__()
@@ -45,17 +36,10 @@ class DiT(nn.Module):
         # original code time embeddings
         time_emb_dim = self.hidden_dim // 2
         external_cond_emb_dim = self.hidden_dim // 2
-        self.random_or_learned_sinusoidal_cond = learned_sinusoidal_cond or random_fourier_cond
-
-        if self.random_or_learned_sinusoidal_cond:
-            sinu_pos_emb = RandomOrLearnedSinusoidalPosEmb(learned_sinusoidal_dim, random_fourier_cond)
-            fourier_dim = learned_sinusoidal_dim + 1
-        else:
-            sinu_pos_emb = SinusoidalPosEmb(dim, theta=sinusoidal_pos_emb_theta)
-            fourier_dim = dim
+        sinu_pos_emb = SinusoidalPosEmb(dim, theta=sinusoidal_pos_emb_theta) # t:(batch,)-> t:(batch,dim)
 
         self.time_mlp = nn.Sequential(
-            sinu_pos_emb, nn.Linear(fourier_dim, time_emb_dim), nn.GELU(), nn.Linear(time_emb_dim, time_emb_dim)
+            sinu_pos_emb, nn.Linear(dim, time_emb_dim), nn.GELU(), nn.Linear(time_emb_dim, time_emb_dim)
         )
         self.external_cond_emb = nn.Sequential(
             nn.Embedding(self.config.world_model_action_num, external_cond_emb_dim//self.external_cond_dim),
@@ -75,11 +59,7 @@ class DiT(nn.Module):
             nn.LeakyReLU(),
         )
 
-        # GRU layer for state transition
-        self.num_gru_layers = num_gru_layers
-        if num_gru_layers > 1:
-            raise NotImplementedError("num_gru_layers > 1 is not implemented yet for TransitionUnet.")
-        self.gru = Conv2dGRUCell(z_cond_dim, z_cond_dim) if num_gru_layers else None
+
 
     def forward(self, x, time, z_cond, external_cond=None, x_self_cond=None):
 
@@ -87,7 +67,7 @@ class DiT(nn.Module):
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
             x = torch.cat((x_self_cond, x), dim=1)
         if self.z_cond_dim:
-            x = torch.cat((z_cond, x), dim=1)
+            x = torch.cat((z_cond, x), dim=1)  # (batch,36,32,32)
 
 
         # original code concantenate emb, external_cond_emb
@@ -102,12 +82,11 @@ class DiT(nn.Module):
 
         x = self.dit(x,emb)
 
-        if self.config.use_tanh:
-            x = self.tanh_layer(x)
+        if self.config.use_tanh: # True
+            x = self.tanh_layer(x) # (batch,36,32,32)
+
         elif self.config.use_lrelu:
             x = self.lrelu_layer(x)
 
-        z_next = self.final_conv(x)
-        if self.num_gru_layers:
-            z_next = self.gru(z_next, z_cond)
+        z_next = self.final_conv(x) # (batch, *z.shape)
         return z_next

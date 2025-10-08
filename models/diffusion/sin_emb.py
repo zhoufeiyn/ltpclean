@@ -8,7 +8,7 @@ from einops import rearrange
 class SinusoidalPosEmb(nn.Module):
     def __init__(self, dim, theta=10000):
         super().__init__()
-        self.dim = dim
+        self.dim = dim # x.shape[-1]
         self.theta = theta
 
     def forward(self, x):

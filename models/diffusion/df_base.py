@@ -225,10 +225,12 @@ class DiffusionForcingBase(nn.Module):
 
     @torch.no_grad()
     def init_df_model(self,observation):
-        observation = self._normalize_x(xs=observation)
+        observation = self._normalize_x(xs=observation) #(4,32,32)
+        batch_observation = torch.stack([observation]) #(1,4,32,32)
+
         init_z = self.init_z.unsqueeze(0).expand(1, *self.z_shape) # (1,32,32,32)
         device = observation.device
-        z, _, _, _, _ = self.transition_model(init_z, torch.stack([observation]), torch.tensor([[45]]).float().to(device), deterministic_t=0)
+        z, _, _, _, _ = self.transition_model(init_z, batch_observation, torch.tensor([[45]]).float().to(device), deterministic_t=0)
         return z
 
     @torch.no_grad()
