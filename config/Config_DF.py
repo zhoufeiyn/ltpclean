@@ -99,7 +99,7 @@ class ConfigDF():
         if model_name is None:
             model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 
-        print("model name:", model_name)
+        # print("model name:", model_name)
         self.model_name = model_name
         
         # 4. 解析模型名称中的标志

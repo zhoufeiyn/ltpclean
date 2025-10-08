@@ -8,13 +8,13 @@ import queue
 from threading import Thread, Event
 import torch
 import time
-
-from utils import get_model, get_data, init_simulator, get_web_img
+from config.configTrain import *
+from utils import read_model, get_data, init_simulator, get_web_img
 
 """Model info"""
 frame_rate = 1/20
 
-model = get_model()
+model = read_model(model_name, model_path, action_space, device)
 init_data = get_data()
 # with torch.no_grad():
 #     init_obs, init_zeta = init_simulator(model, init_data)

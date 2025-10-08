@@ -5,9 +5,8 @@ import cv2
 import torch
 import numpy as np
 import imageio
-from utils import get_model, get_data, get_web_img
-
-
+from config.configTrain import *
+from algorithm import Algorithm
 def get_jave_7action(key):
     if key == "r":
         action = 1
@@ -31,12 +30,12 @@ def get_action_sequence(actions):
     for a in actions:
         assert a in ['l', 'r', 'f', 'j', 'lj', 'rj',
                      'n'], f"action {a} should be in [l->left r->right j->jump f->fire lj->left jump rj->right jump n->null]"
-        ret.extend(get_jave_7action(a))
+        ret.extend(get_jave_7action(a)) # ex.[1, 1, 1, 1, 2 ] return a list of ints
     return ret
 
 
 def preprocess_img(img):
-    target_size = (128, 128)
+    target_size = (img_size, img_size)
     cropped_image = cv2.resize(img[:, :, :3], target_size)
     final_image = np.expand_dims(np.expand_dims(cropped_image.transpose(2, 0, 1), axis=0), axis=0)
     final_image = torch.tensor(final_image, dtype=torch.float32, device=model.device)
@@ -51,8 +50,6 @@ def image_to_numpy_array(filepath):
     return img_array
 
 
-obs_shape = [3, 128, 128]
-
 
 def get_img_data(img_path, device):
     img = Image.open(img_path)
@@ -62,17 +59,18 @@ def get_img_data(img_path, device):
     cur_img = torch.tensor(img_data, dtype=torch.float32, device=device)
 
     cur_img = cur_img.permute(0, 3, 1, 2)
-    cur_img = cur_img.reshape(1, obs_shape[0], obs_shape[1], obs_shape[2])
+    cur_img = cur_img.reshape(1, img_channel, img_size, img_size)
     cur_img = cur_img / 255.0
     return cur_img
 
-
-def init_simulator(model, batch):
-    obs = batch["observations"]
-    with torch.no_grad():
-        wm_env = model.init_wm(obs)
-        return obs, wm_env
-
+def get_web_img(img):
+    # img.shape = [c, h, w]
+    img_3ch = np.transpose(img, (1,2,0)) # [h, w, c]
+    img_3ch = np.clip(img_3ch, 0, 1)
+    img_3ch = cv2.resize(img_3ch, (300, 300), interpolation=cv2.INTER_LINEAR)
+    # img_3ch = cv2.resize(img_3ch, (25, 25), interpolation=cv2.INTER_LINEAR)
+    img_3ch = (img_3ch*255.0).astype(np.uint8)
+    return img_3ch
 
 def parse_comma_separated_list(value):
     return value.split(',')
@@ -92,18 +90,21 @@ def arg():
 
 if __name__ == "__main__":
     args = arg()
-    actions = get_action_sequence(args.actions)
+    actions = get_action_sequence(args.actions)  # ex.[1, 1, 1, 1, 2 ] return a list of ints
     sample_step = args.sample_step
 
-    img_list = []
-    model = get_model()
+    model = Algorithm(model_name,device)
+    state_dict = torch.load(os.path.join("ckpt",model_path),strict = False)
+    model.eval().to(device)
 
     batch_data = {}
-    batch_data["observations"] = get_img_data(args.img, model.device)
-    with torch.no_grad():
-        obs, zeta = init_simulator(model, batch_data)
-    img_list.append(get_web_img(obs[0].cpu().numpy()))
+    img_origin = get_img_data(args.img, model.device) # (h,w c) ->(1,c,h,w) value(0,1) Tensor
+    batch_data["observations"] = img_origin
+    img_list = []
+    img_list.append(get_web_img(img_origin[0].cpu().numpy()))
 
+    with torch.no_grad():
+        zeta = model.init_wm(img_origin)
     for a in actions:
         with torch.no_grad():
             obs, zeta = model.real_time_infer(zeta, torch.tensor([a]).long(), sample_step)

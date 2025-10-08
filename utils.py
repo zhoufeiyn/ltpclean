@@ -82,9 +82,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def get_model():
-    model = read_model(model_name, model_path, action_space, device)
-    return model
+
 
 # np_data = utils.read_file(file_path, data_type)
 
