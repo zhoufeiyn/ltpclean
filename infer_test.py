@@ -3,11 +3,10 @@ import os
 from PIL import Image
 import cv2
 import torch
+import torchvision.transforms as transforms
 import numpy as np
 import imageio
-from utils import read_model, get_data, get_web_img
-import config.configTrain as cfg
-import os.path as osp
+
 def get_jave_7action(key):
     if key == "r":
         action = 1
@@ -34,13 +33,7 @@ def get_action_sequence(actions):
         ret.extend(get_jave_7action(a))
     return ret
 
-def preprocess_img(img):
-    target_size = (128, 128)
-    cropped_image = cv2.resize(img[:, :, :3], target_size) 
-    final_image = np.expand_dims(np.expand_dims(cropped_image.transpose(2, 0, 1), axis=0), axis=0)
-    final_image = torch.tensor(final_image, dtype=torch.float32, device=model.device)
-    batch_data = {'observations': final_image}
-    return batch_data
+
 
 
 
@@ -51,20 +44,21 @@ def image_to_numpy_array(filepath):
     return img_array
 
 
-obs_shape = [3, 128, 128]
+
 
 
 def get_img_data(img_path, device):
-    img = Image.open(img_path).convert('RGB').resize((256, 256))
-    img = np.array(img)
-    img_data = img[np.newaxis, ...]  # (1, 256,256,3)
-
-    cur_img = torch.tensor(img_data, dtype=torch.float32, device=device)
-
-    cur_img = cur_img.permute(0, 3, 1, 2)
-    cur_img = cur_img.reshape(1, obs_shape[0], obs_shape[1], obs_shape[2])
-    cur_img = cur_img / 255.0
-    return cur_img
+    img = Image.open(img_path).convert('RGB')
+    transform = transforms.Compose([
+        # transforms.Resize((image_size, image_size)),
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5] * 3, [0.5] * 3),  # [-1, 1]
+    ])
+    img = transform(img)
+    img.unsqueeze(0)
+    print(f"int_img shape:{img.size()}")
+    return img
 
 
 def init_simulator(model, batch):
@@ -72,10 +66,15 @@ def init_simulator(model, batch):
     latent = model.vae.encode(obs.reshape(-1,3,256,256))
     latent = latent.sample() * 0.18215
     latent = latent.reshape(4,32,32)
-    init_z =model.df_model.init_df_model(latent)
+    init_z =model.df_model.init_df_modelmodel(latent)
     return init_z
 
-
+def get_web_img(img):
+    # img.shape = [c, h, w] 3,256,256
+    img_3ch = np.transpose(img, (1,2,0)) # [h, w, c]
+    img_3ch = np.clip(img_3ch*0.5+0.5, 0, 1)
+    img_3ch = (img_3ch*255.0).astype(np.uint8)
+    return img_3ch
 
 def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=None, device='cuda',sample_step =4,epochs=0):
     """测试训练好的模型"""
@@ -88,17 +87,12 @@ def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=
     if not os.path.exists(img_path):
         print(f"❌ Error: Test image not found: {img_path}")
         return
-    
-    # print(f"🧪 Testing model with image: {img_path}")
-    # print(f"    actions: {actions}")
-    # print(f"    sample_step: {sample_step}")
-    
     try:
         img_list=[]
         batch_data={}
         batch_data['observations']=get_img_data(img_path, device) #(1,3, 256,256)
         with torch.no_grad():
-            zeta = init_simulator(model,batch_data)
+            zeta = init_simulator(model,batch_data) #(1,32,32,32)
         img_list.append(get_web_img(batch_data['observations'][0].cpu().numpy()))
         actions=get_action_sequence(actions)
         for a in actions:
@@ -121,17 +115,3 @@ def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=
 
 
 
-# if __name__ == "__main__":
-#     model = read_model(cfg.model_name, cfg.model_path, cfg.action_space)
-#     state_dict = torch.load(
-#         osp.join("ckpt",model_path),
-#         map_location=torch.device(device),weights_only=False
-#     )
-#     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-#     model_test(
-#         img_path='eval_data/demo1.png',
-#         actions=['r','r','r','r'],
-#         model=model,
-#         device=device,
-#         sample_step=cfg.sample_step
-#     )
