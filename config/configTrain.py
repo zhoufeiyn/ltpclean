@@ -26,7 +26,7 @@ min_improvement: float = 0.15  # 最小改善幅度（15%）
 
 batch_size: int = 1        # 单张图像过拟合
 epochs: int = 200          # 测试epoch数量
-lr: float = 1e-4          # 提高学习率加速过拟合
+
 
 
 sample_step: int = 20
