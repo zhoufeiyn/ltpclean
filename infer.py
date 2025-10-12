@@ -96,8 +96,7 @@ if __name__ == "__main__":
     model = Algorithm(model_name,device)
     state_dict = torch.load(os.path.join("ckpt",model_path), map_location=torch.device(model.device), weights_only=False)
     model.load_state_dict(state_dict['network_state_dict'],strict=False)
-    print("1.Model loaded successfully!")
-    model.eval().to(device)
+    model.eval().to(device) # close dropout batchnorm
 
     batch_data = {}
     img_origin = get_img_data(args.img, model.device) # (h,w c) ->(1,c,h,w) value(0,1) Tensor

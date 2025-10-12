@@ -94,6 +94,49 @@ def get_data(if_random=False):
     batch_data = process_npdata(np_data, 1, start_idx, device)
     return batch_data
 
+
+    """map key(s) to action based on SMB dataset encoding:
+    A=128(jump), up=64(climb), left=32, B=16(run/fire), 
+    start=8, right=4, down=2, select=1
+    
+    Args:
+        key: str or list of str - single key or list of pressed keys
+    
+    Examples:
+        map_Key_to_Action("r") -> 4 (right)
+        map_Key_to_Action(["r", "f"]) -> 20 (right + B = running right)
+        map_Key_to_Action(["r", "f", "j"]) -> 148 (right + B + A = running jump right)
+    """
+    # 如果输入是单个键，转换为列表
+    if isinstance(key, str):
+        keys = [key]
+    else:
+        keys = key
+    
+    action = 0
+    
+    # 遍历所有按下的键，累加动作值
+    for k in keys:
+        if k == "r" or k == "right" or k == "→":
+            action += 4  # right
+        elif k == "l" or k == "left" or k == "←":
+            action += 32  # left
+        elif k == "j" or k == "a":
+            action += 128  # A (jump)
+        elif k == "up" or k == "↑":
+            action += 64  # up (climb)
+        elif k == "f" or k == "b":
+            action += 16  # B (run/fire)
+        elif k == "s":
+            action += 8  # start
+        elif k == "d" or k == "down" or k == "↓":
+            action += 2  # down
+        elif k == "enter":
+            action += 1  # select
+    
+    return action
+
+
 if __name__ == "__main__":
     model = read_model(model_name, model_path, action_space, device)
 

@@ -225,6 +225,7 @@ class DiffusionForcingBase(nn.Module):
 
     @torch.no_grad()
     def init_df_model(self,observation):
+        """Given a start state of img(observation), run forward of transistion model once to get it's z"""
         observation = self._normalize_x(xs=observation) #(4,32,32)
         batch_observation = torch.stack([observation]) #(1,4,32,32)
 
@@ -236,21 +237,26 @@ class DiffusionForcingBase(nn.Module):
     @torch.no_grad()
     def step(self,zeta,cur_act, sampling_timesteps):
         z = zeta
-        horizon = 1
+        horizon = self.chunk_size #  predict 1 frame
 
         chunk = [
             torch.randn((1,) + tuple(self.x_stacked_shape), device=self.device) for _ in range(horizon)
         ]
 
-        pyramid_height = sampling_timesteps + int(horizon * self.uncertainty_scale)
+        pyramid_height = sampling_timesteps + int(horizon * self.uncertainty_scale) #
         pyramid = np.zeros((pyramid_height, horizon), dtype=int)
         for m in range(pyramid_height):
             for t in range(horizon):
                 pyramid[m, t] = m - int(t * self.uncertainty_scale)
         pyramid = np.clip(pyramid, a_min=0, a_max=sampling_timesteps, dtype=int)
+        # pyramid = [[0, 0],  # 第0层：时间步0
+        #            [1, 0],  # 第1层：时间步1
+        #            [2, 1],  # 第2层：时间步2
+        #            [3, 2],  # 第3层：时间步3
+        #            [4, 3]]  # 第4层：时间步4
 
+        # ddim 采样循环
         for m in range(pyramid_height):
-
             z_chunk = z.detach()
             for t in range(horizon):
                 i = min(pyramid[m, t], sampling_timesteps - 1)
@@ -364,11 +370,7 @@ class DiffusionForcingBase(nn.Module):
 
         return loss
 
-    def on_validation_epoch_end(self, namespace="validation"):
-        if not self.validation_step_outputs:
-            return
 
-        self.validation_step_outputs.clear()
 
 
     def _normalize_x(self, xs):

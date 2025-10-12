@@ -26,14 +26,11 @@ class Algorithm(nn.Module):
     # observation (b t), c, h,w = (1,c,h,w),
     # obs[0:1] = (1,c,h,w)
     def init_wm(self,observation):
-        observation = observation[0] #[c,h,w]
-        # print(f'algorithm - init_wm: input img shape:{observation.shape}')
         if self.use_ldm:
             latent = self.vae.encode(observation.reshape(-1, 3, Config.resolution, Config.resolution))
-
             latent = latent.sample() * Config.scale_factor
-            latent = latent.reshape(*Config.vae_latent_shape)
-            observation = latent
+            latent = latent.reshape(*Config.vae_latent_shape) # (4,32,32)
+            observation = latent  # (4,32,32)
         init_zeta = self.df_model.init_df_model(observation)
         return init_zeta
 

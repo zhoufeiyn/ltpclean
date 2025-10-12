@@ -211,25 +211,13 @@ class DiffusionTransitionModel(nn.Module):
         noise = torch.randn_like(x_next)
         noise = torch.clamp(noise, -self.clip_noise, self.clip_noise)
         noised_x_next = self.q_sample(x_start=x_next, t=t, noise=noise) # [1,4,32,32]
+        z_next_pred = self.model(noised_x_next, t, z, external_cond, None)
+        pred_v = self.x_from_z(z_next_pred)
+        x_next_pred = self.predict_start_from_v(noised_x_next, t, pred_v) #x_noise - v_denoise*t
+        target = self.predict_v(x_next, t, noise)
 
-        x_self_cond = None
-
-        if self.self_condition and random() < 0.5: # False
-            with torch.no_grad():
-                x_self_cond = self.model_predictions(noised_x_next, t, z, external_cond=external_cond).pred_x_start
-                x_self_cond.detach_()
-
-        model_pred = self.model_predictions(noised_x_next, t, z, external_cond=external_cond, x_self_cond=x_self_cond)
-        x_next_pred = model_pred.pred_x_start
-        z_next_pred = model_pred.pred_z
-
-        pred = model_pred.model_out
-        if self.objective == "pred_v":
-            target = self.predict_v(x_next, t, noise)
-        else:
-            raise ValueError(f"unknown objective {self.objective}")
-
-        loss = F.mse_loss(pred, target.detach(), reduction="none")
+        # compute loss
+        loss = F.mse_loss(pred_v, target.detach(), reduction="none")
         original_loss = loss.mean().detach()
         normalized_clipped_snr = self.clipped_snr[t] / self.snr_clip
         normalized_snr = self.snr[t] / self.snr_clip
@@ -244,11 +232,7 @@ class DiffusionTransitionModel(nn.Module):
             fused_snr = 1 - (1 - cum_snr * self.cum_snr_decay) * (1 - normalized_snr)
 
         if self.use_snr:
-
-            if self.objective == "pred_v":
-                loss_weight = clipped_fused_snr * self.snr_clip / (fused_snr * self.snr_clip + 1)
-            else:
-                raise ValueError(f'Unknown objective: {self.objective}')
+            loss_weight = clipped_fused_snr * self.snr_clip / (fused_snr * self.snr_clip + 1)
             loss_weight = loss_weight.view(batch_size, *((1,) * (len(loss.shape) - 1)))
         elif self.use_cum_snr and cum_snr is not None:
             loss_weight = cum_snr * self.snr_clip
@@ -265,13 +249,9 @@ class DiffusionTransitionModel(nn.Module):
         #x (batch,lc=4,lh=32,lw=32), z(batch,zc=32,zh=32,zw=32)
 
         model_output = self.x_from_z(z_next)
-
-        if self.objective == "pred_v":
-            v = model_output
-            x_start = self.predict_start_from_v(x, t, v) # why ?
-            pred_noise = self.predict_noise_from_start(x, t, x_start)
-        else:
-            raise ValueError(f"unknown objective {self.objective}")
+        v = model_output
+        x_start = self.predict_start_from_v(x, t, v) # why ?
+        pred_noise = self.predict_noise_from_start(x, t, x_start)
         return ModelPrediction(pred_noise, x_start, z_next, model_output)
 
     def predict_start_from_noise(self, x_t, t, noise):
