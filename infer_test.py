@@ -53,20 +53,20 @@ def get_img_data(img_path, device):
         # transforms.Resize((image_size, image_size)),
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize([0.5] * 3, [0.5] * 3),  # [-1, 1]
+        transforms.Normalize(0.5,0.5),  # [-1, 1]
     ])
     img = transform(img)
-    img.unsqueeze(0)
+    img = img.unsqueeze(0)
     print(f"int_img shape:{img.size()}")
     return img
 
 
 def init_simulator(model, batch):
-    obs = batch["observations"][0]
-    latent = model.vae.encode(obs.reshape(-1,3,256,256))
+    obs = batch["observations"]
+    latent = model.vae.encode(obs.to(model.device))
     latent = latent.sample() * 0.18215
     latent = latent.reshape(4,32,32)
-    init_z =model.df_model.init_df_modelmodel(latent)
+    init_z =model.df_model.init_df_model(latent)
     return init_z
 
 def get_web_img(img):
@@ -76,7 +76,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=None, device='cuda',sample_step =4,epochs=0):
+def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,epochs=0):
     """测试训练好的模型"""
     
     # 检查输入参数

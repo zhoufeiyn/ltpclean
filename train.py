@@ -295,7 +295,7 @@ def train():
 
     # video sequence parameters
     num_frames = cfg.num_frames
-    batch_size = cfg.batch_size
+
 
 
     model_name = cfg.model_name
@@ -394,8 +394,8 @@ def train():
             # 拼接成batch_tensor: [batch_size, num_frames, c, h, w]
             batch_data = [
                 torch.cat(batch_images, dim=0).to(device_obj),
-                torch.cat(batch_actions, dim=0).to(device_obj),
-                torch.cat(batch_nonterminals, dim=0).to(device_obj)
+                torch.cat(batch_actions, dim=0).to(device_obj), # (b,num_frames,1)
+                torch.cat(batch_nonterminals, dim=0).to(device_obj) #(b,num_frames)
             ]
 
            
