@@ -1,18 +1,15 @@
 # 0920 update: try to overfit level1-1 in one directory
 
-from typing import List, Tuple, Optional
+from typing import Optional
 import re
-
+from models.vae.sdxlvae import SDXLVAE
 from algorithm import Algorithm
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-import torchvision
+
+from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.utils import save_image
 import config.configTrain as cfg
-# import configTrain as cfg
+
 import matplotlib.pyplot as plt
 from PIL import Image
 
@@ -152,7 +149,7 @@ class MarioDataset(Dataset):
         self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
             transforms.ToTensor(), # [0, 1]
-            # transforms.Normalize(0.5, 0.5),  # [-1, 1]
+            transforms.Normalize(0.5, 0.5),  # [-1, 1]
         ])
     def _load_data(self):
         """load all png files and corresponding actions"""
@@ -261,7 +258,7 @@ def build_video_sequence(dataset, start_idx, end_idx):
     # 返回tensor而不是列表
     return images_tensor, actions_tensor, nonterminals_tensor
 
-def vae_encode(batch_data_images, vae_model, device):
+def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
     """vae encode the images"""
     # 将图像编码到潜在空间: [batch_size, num_frames, 3, 128, 128] -> [batch_size, num_frames, 4, 32, 32]
     with torch.no_grad():
@@ -273,9 +270,9 @@ def vae_encode(batch_data_images, vae_model, device):
         if vae_model is not None:
             latent_dist = vae_model.encode(images_flat) # [batch_size * num_frames, 3, 128, 128]
             latent_images = latent_dist.sample()  # 采样潜在表示 [batch_size * num_frames, 4, 32, 32]
-            # 使用正确的缩放因子
-            from config.Config_VAE import Config
-            latent_images = latent_images * Config.scale_factor  # 0.64
+
+
+            latent_images = latent_images * scale_factor
             # print(f"   Using scale factor: {Config.scale_factor}")
             
             # 重塑回 [batch_size, num_frames, 4, 32, 32]
@@ -294,7 +291,7 @@ def train():
     logger, log_path = setup_logging()
     
     device_obj = torch.device(device)
-    dataset = MarioDataset(cfg.data_path, cfg.image_size)
+    dataset = MarioDataset(cfg.data_path, cfg.img_size)
 
     # video sequence parameters
     num_frames = cfg.num_frames
@@ -324,7 +321,7 @@ def train():
     # model.eval()  # 设置为评估模式，但允许训练
     
     # 获取VAE和Diffusion模型
-    vae = model.vae if hasattr(model, 'vae') else None
+    vae = SDXLVAE().to(device_obj)
     diffusion_model = model.df_model
 
     
@@ -399,9 +396,7 @@ def train():
                 torch.cat(batch_actions, dim=0).to(device_obj),
                 torch.cat(batch_nonterminals, dim=0).to(device_obj)
             ]
-           
 
-            # 确保所有数据都在同一设备上
            
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
             # 训练步骤
@@ -412,7 +407,7 @@ def train():
                 # 反向传播
                 opt.zero_grad()
                 loss.backward()
-                diffusion_model.optimizer_step(epoch, batch_count, opt, loss)
+                opt.step()
                 
                 total_loss += loss.item()
                 batch_count += 1

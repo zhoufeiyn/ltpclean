@@ -5,9 +5,9 @@ import cv2
 import torch
 import numpy as np
 import imageio
-from model import get_model, get_data, get_web_img
-import configTrain as cfg
-
+from utils import read_model, get_data, get_web_img
+import config.configTrain as cfg
+import os.path as osp
 def get_jave_7action(key):
     if key == "r":
         action = 1
@@ -117,13 +117,17 @@ def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=
 
 
 
-if __name__ == "__main__":
-    model = get_model()
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model_test(
-        img_path='eval_data/demo1.png',
-        actions=['r','r','r','r'],
-        model=model,
-        device=device,
-        sample_step=cfg.sample_step
-    )
+# if __name__ == "__main__":
+#     model = read_model(cfg.model_name, cfg.model_path, cfg.action_space)
+#     state_dict = torch.load(
+#         osp.join("ckpt",model_path),
+#         map_location=torch.device(device),weights_only=False
+#     )
+#     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+#     model_test(
+#         img_path='eval_data/demo1.png',
+#         actions=['r','r','r','r'],
+#         model=model,
+#         device=device,
+#         sample_step=cfg.sample_step
+#     )
