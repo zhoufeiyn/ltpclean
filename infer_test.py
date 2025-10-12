@@ -55,7 +55,7 @@ obs_shape = [3, 128, 128]
 
 
 def get_img_data(img_path, device):
-    img = Image.open(img_path).convert('RGB').resize((128, 128))
+    img = Image.open(img_path).convert('RGB').resize((256, 256))
     img = np.array(img)
     img_data = img[np.newaxis, ...]  # (1, 128,128,3)
 
