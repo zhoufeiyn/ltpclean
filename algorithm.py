@@ -39,7 +39,7 @@ class Algorithm(nn.Module):
         zeta,obs = self.df_model.step(zeta,cur_act.float(), sampling_timestep)
         # wm_env.update(zeta)
         if self.use_ldm:
-            obs = self.vae.decode(obs / 0.18215)
+            obs = self.vae.decode(obs / Config.scale_factor)
         return obs, zeta
 
     def forward(self, batch, predict_len):

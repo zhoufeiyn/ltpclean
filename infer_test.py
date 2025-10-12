@@ -57,7 +57,7 @@ obs_shape = [3, 128, 128]
 def get_img_data(img_path, device):
     img = Image.open(img_path).convert('RGB').resize((256, 256))
     img = np.array(img)
-    img_data = img[np.newaxis, ...]  # (1, 128,128,3)
+    img_data = img[np.newaxis, ...]  # (1, 256,256,3)
 
     cur_img = torch.tensor(img_data, dtype=torch.float32, device=device)
 
@@ -68,10 +68,12 @@ def get_img_data(img_path, device):
 
 
 def init_simulator(model, batch):
-    obs = batch["observations"]
-    with torch.no_grad():
-        wm_env = model.init_wm(obs)
-        return obs, wm_env
+    obs = batch["observations"][0]
+    latent = model.vae.encode(obs.reshape(-1,3,256,256))
+    latent = latent.sample() * 0.18215
+    latent = latent.reshape(4,32,32)
+    init_z =model.df_model.init_df_model(latent)
+    return init_z
 
 
 
@@ -94,14 +96,16 @@ def model_test(img_path='eval_data/demo1.png', actions=['r','r','r','r'], model=
     try:
         img_list=[]
         batch_data={}
-        batch_data['observations']=get_img_data(img_path, device)
+        batch_data['observations']=get_img_data(img_path, device) #(1,3, 256,256)
         with torch.no_grad():
-            obs,zeta = init_simulator(model,batch_data)
-        img_list.append(get_web_img(obs[0].cpu().numpy()))
+            zeta = init_simulator(model,batch_data)
+        img_list.append(get_web_img(batch_data['observations'][0].cpu().numpy()))
         actions=get_action_sequence(actions)
         for a in actions:
             with torch.no_grad():
-                obs, zeta = model.real_time_infer(zeta, torch.tensor([a]).long(), sample_step)
+                a = torch.tensor([a],device=device).long()
+                zeta, obs = model.df_model.step(zeta, a.float(), sample_step)
+                obs = model.vae.decode(obs / 0.18215)
             img_list.append(get_web_img(obs[0].cpu().numpy()))
             
         if not os.path.isdir('./output/'):
