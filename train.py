@@ -322,6 +322,7 @@ def train():
     
     # 获取VAE和Diffusion模型
     vae = SDXLVAE().to(device_obj)
+    model.vae = vae
     diffusion_model = model.df_model
 
     
