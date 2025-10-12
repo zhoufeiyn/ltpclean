@@ -13,7 +13,7 @@ data_path: str = "./datatrain"
 ckpt_path: str = "./ckpt"
 
 """Train Config"""
-img_size = 128
+img_size = 256
 img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
 num_actions: int = 46

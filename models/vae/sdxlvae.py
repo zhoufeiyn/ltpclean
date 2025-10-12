@@ -1,5 +1,5 @@
 import diffusers
-import torch
+import torch.nn as nn
 class SDXLVAE(nn.Module):
     def __init__(self):
         super().__init__()
