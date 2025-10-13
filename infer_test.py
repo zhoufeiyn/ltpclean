@@ -6,7 +6,9 @@ import torch
 import torchvision.transforms as transforms
 import numpy as np
 import imageio
-
+from algorithm import Algorithm
+from config.configTrain import *
+from models.vae.sdxlvae import SDXLVAE
 def get_jave_7action(key):
     if key == "r":
         action = 1
@@ -33,21 +35,13 @@ def get_action_sequence(actions):
         ret.extend(get_jave_7action(a))
     return ret
 
-
-
-
-
 def image_to_numpy_array(filepath):
     img = Image.open(filepath)
     img_array = np.array(img)
     img_array = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
     return img_array
 
-
-
-
-
-def get_img_data(img_path, device):
+def get_img_data(img_path):
     img = Image.open(img_path).convert('RGB')
     transform = transforms.Compose([
         # transforms.Resize((image_size, image_size)),
@@ -60,14 +54,14 @@ def get_img_data(img_path, device):
     print(f"int_img shape:{img.size()}")
     return img
 
-
 def init_simulator(model, batch):
     obs = batch["observations"]
     latent = model.vae.encode(obs.to(model.device))
+    obs = model.vae.decode(obs / 0.18215)
     latent = latent.sample() * 0.18215
     latent = latent.reshape(4,32,32)
     init_z =model.df_model.init_df_model(latent)
-    return init_z
+    return init_z,obs
 
 def get_web_img(img):
     # img.shape = [c, h, w] 3,256,256
@@ -90,10 +84,10 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
     try:
         img_list=[]
         batch_data={}
-        batch_data['observations']=get_img_data(img_path, device) #(1,3, 256,256)
+        batch_data['observations']=get_img_data(img_path) #(1,3, 256,256)
         with torch.no_grad():
-            zeta = init_simulator(model,batch_data) #(1,32,32,32)
-        img_list.append(get_web_img(batch_data['observations'][0].cpu().numpy()))
+            obs,zeta = init_simulator(model,batch_data) #(1,32,32,32)
+        img_list.append(get_web_img(obs[0].cpu().numpy()))
         actions=get_action_sequence(actions)
         for a in actions:
             with torch.no_grad():
@@ -111,6 +105,35 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
         print(f"❌ Error during model testing: {e}")
         import traceback
         traceback.print_exc()
+
+def parse_comma_separated_list(value):
+    return value.split(',')
+def arg():
+    parser = argparse.ArgumentParser(description="Direct inference of Playable Game Generation")
+
+    parser.add_argument('-i', "--img", type=str, required=True, help="The initial screen of the game")
+    parser.add_argument('-a', "--actions", required=True, type=parse_comma_separated_list,
+                        help="action sequences\n l->left r->right j->jump f->fire lj->left jump rj->right jump n->null")
+    parser.add_argument('-s', "--sample_step", default=20, type=int, help="diffusion sample step")
+
+    args = parser.parse_args()
+    return args
+
+if __name__ =="__main__":
+    args = arg()
+    sample_step = args.sample_step
+    model = Algorithm(model_name,device)
+    vae = SDXLVAE()
+    model.vae = vae
+
+    state_dict = torch.load(os.path.join("ckpt",model_path),map_location=device,weights_only=False)
+    model.df_model.load_state_dict(state_dict["network_state_dict"],strict=False)
+    model.eval().to(device)
+
+    model_test(args.img,args.actions,model,device,sample_step)
+    # python infer_test.py -i 'eval_data/demo1.png'
+
+
 
 
 
