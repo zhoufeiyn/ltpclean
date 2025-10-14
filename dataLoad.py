@@ -88,17 +88,17 @@ class MarioDataset(Dataset):
     @staticmethod
     def _map_action_to_playgenaction_static(action: int) -> int:
         """静态方法版本的动作映射函数"""
-        if action == 20:
+        if action == 20: # r
             return 1
-        elif action == 148:
+        elif action == 148 or 144: # rj
             return 2
-        elif action == 48:
+        elif action == 48: # l
             return 3
-        elif action == 176:
+        elif action == 176 or 144: # lj
             return 4
-        elif action == 128:
+        elif action == 128: # j
             return 5
-        elif action == 16:
+        elif action == 16: # f
             return 6
         elif action == 0:
             return 0
