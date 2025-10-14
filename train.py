@@ -170,7 +170,9 @@ def train():
     
     # 使用Algorithm类加载完整的预训练模型（包含VAE和Diffusion）
     model = Algorithm(model_name, device_obj)
-    
+    # 获取VAE和Diffusion模型
+    vae = SDXLVAE().to(device_obj)
+    model.vae = vae
     # 加载预训练checkpoint
     checkpoint_path = os.path.join(cfg.ckpt_path, cfg.model_path)
     if os.path.exists(checkpoint_path):
@@ -182,10 +184,6 @@ def train():
     else:
         print(f"⚠️ Checkpoint not found: {checkpoint_path},use random initialized model")
     model = model.to(device_obj)
-
-    # 获取VAE和Diffusion模型
-    vae = SDXLVAE().to(device_obj)
-    model.vae = vae
     diffusion_model = model.df_model
 
     if vae is not None:
@@ -221,7 +219,7 @@ def train():
     # 初始化损失历史记录
     loss_history = []
 
-    # 预计算所有有效的视频序列起始位置
+    # 预计算所有有效的视频序列起始位置,间隔一个frame_interval取一个video sequence, 最终剩下不足一个video的扔掉
     valid_starts = []
     for start in range(0, total_samples - num_frames + 1, frame_interval):
         valid_starts.append(start)
@@ -232,7 +230,7 @@ def train():
     for epoch in range(epochs):
         total_loss = 0
         batch_count = 0
-        avg_loss = 0
+
 
         # 按batch处理 - 优化版本
         for batch_start in range(0, num_valid_videos, batch_size):
@@ -268,13 +266,13 @@ def train():
            
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
             
-            # 扩展batch_size: [1, num_frames, channels, h, w] -> [16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(16, 1, 1, 1, 1)
+            # 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
+            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
             
             
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(16, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(16, 1)     # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(32, 1)     # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:

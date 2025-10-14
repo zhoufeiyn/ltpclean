@@ -51,7 +51,6 @@ def get_img_data(img_path):
     ])
     img = transform(img)
     img = img.unsqueeze(0)
-    print(f"int_img shape:{img.size()}")
     return img
 
 def init_simulator(model, batch):

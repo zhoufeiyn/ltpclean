@@ -105,16 +105,7 @@ class MarioDataset(Dataset):
         else:
             return 0
     
-    def _extract_action_from_filename(self, filename: str) -> Optional[int]:
-        """extract action from filename"""
-        # 文件名格式: Rafael_dp2a9j4i_e6_1-1_f1000_a20_2019-04-13_20-13-16.win.png
-        pattern = r'_a(\d+)_'
-        match = re.search(pattern, filename)
-        if match:
-            action = int(match.group(1))
-            action_mapped = MarioDataset._map_action_to_playgenaction_static(action)
-            return action_mapped
-        return None
+
         
     def __len__(self):
         return len(self.image_files)
@@ -163,9 +154,9 @@ def build_video_sequence_batch(dataset, start_indices, num_frames):
             video_nonterminals.append(True)
         
         # 转换为tensor
-        images_tensor = torch.stack(video_images, dim=0).unsqueeze(0)  # [1, num_frames, 3, 128, 128]
-        actions_tensor = torch.tensor(video_actions, dtype=torch.long).unsqueeze(0).unsqueeze(-1)  # [1, num_frames, 1]
-        nonterminals_tensor = torch.tensor(video_nonterminals, dtype=torch.bool).unsqueeze(0)  # [1, num_frames]
+        images_tensor = torch.stack(video_images, dim=0).unsqueeze(0)  # [b, num_frames, 3, 128, 128]
+        actions_tensor = torch.tensor(video_actions, dtype=torch.long).unsqueeze(0).unsqueeze(-1)  # [b, num_frames, 1]
+        nonterminals_tensor = torch.tensor(video_nonterminals, dtype=torch.bool).unsqueeze(0)  # [b, num_frames]
         
         batch_images.append(images_tensor)
         batch_actions.append(actions_tensor)
