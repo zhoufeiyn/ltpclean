@@ -32,4 +32,4 @@ epochs: int = 2000          # 测试epoch数量
 
 sample_step: int = 20
 test_img_path: str = "./eval_data/demo1.png"
-actions = ['r','r','r','r','r','r','r','r','r','r','r']
+actions = ['rj','rj','rj','rj','rj','rj','rj','rj']
