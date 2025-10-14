@@ -1,22 +1,16 @@
 # 0920 update: try to overfit level1-1 in one directory
 
-from typing import Optional
-import re
 from models.vae.sdxlvae import SDXLVAE
 from algorithm import Algorithm
 import torch
-
-from torch.utils.data import Dataset
-from torchvision import transforms
 import config.configTrain as cfg
-
 import matplotlib.pyplot as plt
-from PIL import Image
-
 import os
 from datetime import datetime
 from infer_test import model_test
 import logging
+# 导入数据加载模块
+from dataLoad import MarioDataset, build_video_sequence_batch
 
 
 
@@ -110,8 +104,6 @@ def save_model(model, epochs, final_loss,path=cfg.ckpt_path):
 
 def save_best_checkpoint(model, epoch,  best_loss, is_best=False,path=cfg.ckpt_path):
     """保存检查点（定期保存和最佳模型保存）"""
-
-
     if not os.path.exists(path):
         os.makedirs(path)
     
@@ -130,133 +122,6 @@ def save_best_checkpoint(model, epoch,  best_loss, is_best=False,path=cfg.ckpt_p
         torch.save(checkpoint_data, latest_path)
         print(f"🏆 save best model: epoch: {epoch},best loss = {best_loss:.6f}")
     
-
-# -----------------------------
-# Custom Dataset for Mario Data
-# -----------------------------
-
-class MarioDataset(Dataset):
-    """load mario dataset __init__ action and img paths,
-     __getitem__  will return image and corresponding action"""
-    """up to date: 2025-09-20 only load all frames in one directory,
-     return array ofimages and actions"""
-    def __init__(self, data_path: str, image_size):
-        self.data_path = data_path
-        self.image_size = image_size
-        self.image_files = [] # image files path (xxx.png)
-        self.actions = [] # action (0-255)
-        self._load_data()
-        self.transform = transforms.Compose([
-            transforms.Resize((image_size, image_size)),
-            transforms.ToTensor(), # [0, 1]
-            transforms.Normalize(0.5, 0.5),  # [-1, 1]
-        ])
-    def _load_data(self):
-        """load all png files and corresponding actions"""
-        print(f" data path is scanning: {self.data_path}")
-        if not os.path.exists(self.data_path): 
-            print(f"❌ data path not found: {self.data_path}")
-            return
-        
-        total_files = 0
-        valid_files = 0
-
-        for root, dirs, files in os.walk(self.data_path):
-            if root == self.data_path:
-                continue
-            for file in files:
-                if file.lower().endswith('.png'):
-                    total_files += 1
-                    file_path = os.path.join(root, file)
-                    
-                    # 尝试从文件名提取动作
-                    action = self._extract_action_from_filename(file)
-                    if action is not None:
-                        self.image_files.append(file_path)
-                        self.actions.append(action)
-                        valid_files += 1
-                    else:
-                        print(f"⚠️ can't extract action from filename: {file}")
-    
-    def _map_action_to_playgenaction(self, action: int) -> int:
-        """map action to playgenaction"""
-        # 255 to 7
-        if action == 20: # right + B = 4+16=running right
-            return 1
-        elif action == 148: # right + B + A = 4+16+128=running jump right
-            return 2
-        elif action == 48: # left + B = 32+16=running left
-            return 3
-        elif action == 176: # left + B + A = 32+16+128=running jump left
-            return 4
-        elif action == 128: # A = 128=jump
-            return 5
-        elif action == 16: # B = 16=fire or run
-            return 6
-        elif action == 0: # null
-            return 0
-
-            
-        
-    def _extract_action_from_filename(self, filename: str) -> Optional[int]:
-        """extract action from filename"""
-        # 文件名格式: Rafael_dp2a9j4i_e6_1-1_f1000_a20_2019-04-13_20-13-16.win.png
-        pattern = r'_a(\d+)_'
-        match = re.search(pattern, filename)
-        if match:
-            action = int(match.group(1))
-            action_mapped = self._map_action_to_playgenaction(action)
-            return action_mapped
-        return None
-        
-    def __len__(self):
-        return len(self.image_files)
-    
-    def __getitem__(self, idx):
-        """get the data sample of the specified index"""
-        if idx >= len(self.image_files):
-            raise IndexError(f"Index {idx} out of range for dataset of size {len(self.image_files)}")
-        
-        # 加载图像
-        image_path = self.image_files[idx]
-        image = Image.open(image_path).convert('RGB')
-        image = self.transform(image)
-        
-        # 获取动作（如果有的话）
-        action = self.actions[idx] if idx < len(self.actions) else 0
-        
-        return image, action
-
-
-def build_video_sequence(dataset, start_idx, end_idx):
-    """build video sequence in one batch from dataset, return [1, num_frames, ch, h, w]"""
-
-    # 存储一个视频序列的数据
-    video_images = []  # 存储当前视频的num_frames帧图像
-    video_actions = []  # 存储当前视频的num_frames个动作
-    video_nonterminals = []  # 存储当前视频的num_frames个nonterminals
-
-    # 构建当前视频序列
-    for frame_idx in range(start_idx, end_idx):
-        image, action = dataset[frame_idx]
-        video_images.append(image)  # image shape: [3, 128, 128]
-        video_actions.append(action)  # action是整数，直接使用
-        video_nonterminals.append(True)  # 先都默认True
-    # 转换为tensor并组织成目标格式
-    # [num_frames, channels, h, w] = [num_frames, 3, 128, 128]
-    images_tensor = torch.stack(video_images, dim=0)  # [num_frames, 3, 128, 128]
-    images_tensor = images_tensor.unsqueeze(0)  # [1, num_frames, 3, 128, 128]
-
-    # [batch_size, num_frames, action_dim] = [1, num_frames, 1]
-    actions_tensor = torch.tensor(video_actions, dtype=torch.long)  # [num_frames]
-    actions_tensor = actions_tensor.unsqueeze(0).unsqueeze(-1)  # [1, num_frames, 1]
-
-    # [batch_size, num_frames] = [1, num_frames]
-    nonterminals_tensor = torch.tensor(video_nonterminals, dtype=torch.bool)  # [num_frames]
-    nonterminals_tensor = nonterminals_tensor.unsqueeze(0)  # [1, num_frames]
-
-    # 返回tensor而不是列表
-    return images_tensor, actions_tensor, nonterminals_tensor
 
 def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
     """vae encode the images"""
@@ -291,13 +156,12 @@ def train():
     logger, log_path = setup_logging()
     
     device_obj = torch.device(device)
-    dataset = MarioDataset(cfg.data_path, cfg.img_size)
+    # 使用多进程数据加载优化
+    dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
 
     # video sequence parameters
     num_frames = cfg.num_frames
-
-
-
+    frame_interval = cfg.frame_interval
     model_name = cfg.model_name
 
     best_save_interval = cfg.best_save_interval
@@ -318,14 +182,12 @@ def train():
     else:
         print(f"⚠️ Checkpoint not found: {checkpoint_path},use random initialized model")
     model = model.to(device_obj)
-    # model.eval()  # 设置为评估模式，但允许训练
-    
+
     # 获取VAE和Diffusion模型
     vae = SDXLVAE().to(device_obj)
     model.vae = vae
     diffusion_model = model.df_model
 
-    
     if vae is not None:
         vae.eval()
         for param in vae.parameters(): # freeze VAE parameters
@@ -347,68 +209,72 @@ def train():
         print(f"❌ dataset not enough: need at least {num_frames} samples, but only {total_samples} samples")
         return
     # 计算可以创建多少个完整的视频序列
-    num_videos = total_samples // num_frames
-    print(f"dataset loaded: {total_samples} samples, construct {num_videos} complete video sequences, each video has {num_frames} frames, construct {num_videos//batch_size} batches, each batch has {batch_size} videos")
-    
+    num_videos = (total_samples-num_frames) // frame_interval + 1
+    print(f"dataset loaded: {total_samples} samples, construct {num_videos} complete video sequences, "
+        f"each video has {num_frames} frames, construct {(num_videos + batch_size - 1) // batch_size } batches, the batch size is {batch_size}")
+
     # 初始化最佳损失跟踪
     best_loss = float('inf')
     min_improvement = cfg.min_improvement  # 最小改善幅度
     final_avg_loss = 0  # 用于保存最终的avg_loss
-    
+
     # 初始化损失历史记录
-    loss_history = []  
+    loss_history = []
+
+    # 预计算所有有效的视频序列起始位置
+    valid_starts = []
+    for start in range(0, total_samples - num_frames + 1, frame_interval):
+        valid_starts.append(start)
+    
+    # 按batch_size分组处理
+    num_valid_videos = len(valid_starts)
     
     for epoch in range(epochs):
         total_loss = 0
         batch_count = 0
         avg_loss = 0
 
-        # 遍历所有视频序列
-        for i in range(0, total_samples, batch_size*num_frames):
+        # 按batch处理 - 优化版本
+        for batch_start in range(0, num_valid_videos, batch_size):
+            batch_end = min(batch_start + batch_size, num_valid_videos)
+            current_batch_size = batch_end - batch_start
             
-            batch_images = []
-            batch_actions = []
-            batch_nonterminals = []
+            # 获取当前batch的起始索引
+            current_start_indices = valid_starts[batch_start:batch_end]
             
-            # 检查是否有足够的数据构建完整批次
-            if i + batch_size*num_frames > total_samples:
-                print(f"⚠️ jump to next batch: need {batch_size*num_frames} samples, but only {total_samples - i} samples left")
-                break
+            # 批量构建视频序列
+            batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(
+                dataset, current_start_indices, num_frames
+            )
             
-            for batch_idx in range(batch_size):
-                start_idx = i + batch_idx*num_frames
-                end_idx = start_idx + num_frames
+            # 如果batch不满，用最后一个视频复制补齐
+            if current_batch_size < batch_size:
+                last_video_images = batch_images[-1]
+                last_video_actions = batch_actions[-1]
+                last_video_nonterminals = batch_nonterminals[-1]
                 
-                # 确保不超出数据集边界
-                if end_idx > total_samples:
-                    print(f"⚠️ jump to next batch: start_idx={start_idx}, end_idx={end_idx}, total_samples={total_samples}")
-                    break
-                    
-                video_images, video_actions, video_nonterminals = build_video_sequence(dataset, start_idx, end_idx)
-                
-                # 添加到批次列表中
-                batch_images.append(video_images)
-                batch_actions.append(video_actions)
-                batch_nonterminals.append(video_nonterminals)
-            
-            # 拼接成batch_tensor: [batch_size, num_frames, c, h, w]
+                for _ in range(batch_size - current_batch_size):
+                    batch_images.append(last_video_images)
+                    batch_actions.append(last_video_actions)
+                    batch_nonterminals.append(last_video_nonterminals)
+
+            # 拼接成batch_tensor
             batch_data = [
                 torch.cat(batch_images, dim=0).to(device_obj),
-                torch.cat(batch_actions, dim=0).to(device_obj), # (b,num_frames,1)
-                torch.cat(batch_nonterminals, dim=0).to(device_obj) #(b,num_frames)
+                torch.cat(batch_actions, dim=0).to(device_obj),
+                torch.cat(batch_nonterminals, dim=0).to(device_obj)
             ]
 
            
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
-  
             
             # 扩展batch_size: [1, num_frames, channels, h, w] -> [16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
-
+            batch_data[0] = batch_data[0].repeat(16, 1, 1, 1, 1)
+            
             
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(32, 1)     # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(16, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(16, 1)     # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
@@ -476,7 +342,7 @@ def train():
     
 
     # 训练完成后保存最终模型
-    if epochs >= 1000 and final_avg_loss > 0:
+    if epochs >= 200 and final_avg_loss > 0:
         save_message = "💾 save final training model..."
         print(save_message)
         logger.info(save_message)

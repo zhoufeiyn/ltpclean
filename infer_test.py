@@ -47,7 +47,7 @@ def get_img_data(img_path):
         # transforms.Resize((image_size, image_size)),
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        transforms.Normalize(0.5,0.5),  # [-1, 1]
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
     ])
     img = transform(img)
     img = img.unsqueeze(0)
@@ -56,12 +56,17 @@ def get_img_data(img_path):
 
 def init_simulator(model, batch):
     obs = batch["observations"]
-    latent = model.vae.encode(obs.to(model.device))
-    obs = model.vae.decode(obs / 0.18215)
-    latent = latent.sample() * 0.18215
-    latent = latent.reshape(4,32,32)
-    init_z =model.df_model.init_df_model(latent)
-    return init_z,obs
+
+    latent_dist = model.vae.encode(obs.to(model.device))
+
+    latent = latent_dist.sample()
+    decoded_obs = model.vae.decode(latent)
+
+    latent_for_df = latent * 0.18215
+    latent_for_df = latent_for_df.reshape(4, 32, 32)
+    init_z = model.df_model.init_df_model(latent_for_df)
+    
+    return init_z, decoded_obs
 
 def get_web_img(img):
     # img.shape = [c, h, w] 3,256,256
@@ -86,8 +91,8 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
         batch_data={}
         batch_data['observations']=get_img_data(img_path) #(1,3, 256,256)
         with torch.no_grad():
-            obs,zeta = init_simulator(model,batch_data) #(1,32,32,32)
-        img_list.append(get_web_img(obs[0].cpu().numpy()))
+            zeta,obs_start = init_simulator(model,batch_data) #(1,32,32,32)
+        img_list.append(get_web_img(obs_start[0].cpu().numpy()))
         actions=get_action_sequence(actions)
         for a in actions:
             with torch.no_grad():
@@ -127,11 +132,11 @@ if __name__ =="__main__":
     model.vae = vae
 
     state_dict = torch.load(os.path.join("ckpt",model_path),map_location=device,weights_only=False)
-    model.df_model.load_state_dict(state_dict["network_state_dict"],strict=False)
+    model.load_state_dict(state_dict["network_state_dict"],strict=False)
     model.eval().to(device)
 
     model_test(args.img,args.actions,model,device,sample_step)
-    # python infer_test.py -i 'eval_data/demo1.png'
+    # python infer_test.py -i 'eval_data/demo1.png' -a r,r,r,r,r,r
 
 
 
