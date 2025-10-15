@@ -169,6 +169,7 @@ class DiffusionForcingBase(nn.Module):
             expand_dim = len(loss.shape) - len(weight.shape) - 1
             weight = rearrange(weight, "(t fs) b ... -> t b fs ..." + " 1" * expand_dim, fs=self.frame_stack)
             loss = loss * weight
+            print("reweighloss:",loss)
 
         return loss.mean()
 

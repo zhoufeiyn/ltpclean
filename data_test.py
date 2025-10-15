@@ -1,14 +1,10 @@
 # 0920 update: try to overfit level1-1 in one directory
 
-from models.vae.sdxlvae import SDXLVAE
-from algorithm import Algorithm
+
 import torch
 import config.configTrain as cfg
-import matplotlib.pyplot as plt
-import os
-from datetime import datetime
-from infer_test import model_test
-import logging
+
+
 # 导入数据加载模块
 from dataLoad import MarioDataset, build_video_sequence_batch
 
@@ -23,10 +19,10 @@ def train():
     dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
 
     # video sequence parameters
-    num_frames = cfg.num_frames
-    frame_interval = cfg.frame_interval
+    num_frames = 8
+    frame_interval = 8
 
-    epochs, batch_size = 0, 1
+    epochs, batch_size = 1, 1
 
 
     print("---2. load dataset---")

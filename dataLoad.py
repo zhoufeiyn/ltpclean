@@ -77,6 +77,11 @@ class MarioDataset(Dataset):
         # 按帧号排序
         file_data.sort(key=lambda x: x[3])
         
+        # 将最后一帧的nonterminal设置为False（游戏结束）
+        if file_data:
+            last_item = file_data[-1]
+            file_data[-1] = (last_item[0], last_item[1], False, last_item[3])
+        
         # 分离数据
         files = [item[0] for item in file_data]
         actions = [item[1] for item in file_data]
@@ -97,7 +102,7 @@ class MarioDataset(Dataset):
     def _extract_action_nonterminal_from_filename_static(filename: str) -> Optional[int]:
         """静态方法版本的动作提取函数"""
         pattern1 = r'_a(\d+)_'
-        pattern2 = r'_nt(\d+)_'
+        pattern2 = r'_nt(\d+)_'  # 修改：匹配nt后面数字然后是点号
         match1 = re.search(pattern1, filename)
         match2 = re.search(pattern2, filename)
         if match1:
@@ -105,9 +110,11 @@ class MarioDataset(Dataset):
             action_mapped = MarioDataset._map_action_to_playgenaction_static(action)
         else:
             action_mapped = None
+        
         if match2:
-            nonterminal = int(match2.group(2))
-            nonterminal = nonterminal==1
+            nonterminal = int(match2.group(1))  # 修改：group(1)而不是group(2)
+            nonterminal = nonterminal== 1
+
         else:
             nonterminal = False
         return action_mapped,nonterminal
@@ -177,6 +184,7 @@ def build_video_sequence_batch(dataset, start_indices, num_frames):
         video_nonterminals = []
         
         for frame_idx in range(start_idx, end_idx):
+
             image, action, nonterminal = dataset[frame_idx]
             video_images.append(image)
             video_actions.append(action)
