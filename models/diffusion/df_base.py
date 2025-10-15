@@ -135,6 +135,7 @@ class DiffusionForcingBase(nn.Module):
         xs = batch[0]
         batch_size, n_frames = xs.shape[:2]
 
+
         if n_frames % self.frame_stack != 0:
             raise ValueError("Number of frames must be divisible by frame stack size")
         if self.context_frames % self.frame_stack != 0:
@@ -161,6 +162,7 @@ class DiffusionForcingBase(nn.Module):
             init_z = torch.zeros(batch_size, *self.z_shape)
             init_z = init_z.to(xs.device)
 
+        print(f"preprocess batch,xs:{xs.shape},condition: {conditions},masks: {masks}, z:{init_z.shape}")
         return xs, conditions, masks, init_z
 
     def reweigh_loss(self, loss, weight=None):
@@ -170,6 +172,7 @@ class DiffusionForcingBase(nn.Module):
             weight = rearrange(weight, "(t fs) b ... -> t b fs ..." + " 1" * expand_dim, fs=self.frame_stack)
             loss = loss * weight
             print("reweighloss:",loss)
+            breakpoint()
 
         return loss.mean()
 
