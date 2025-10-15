@@ -25,11 +25,13 @@ gif_save_epoch: int = 200  # gif保存间隔 \output
 best_save_interval: int = 50000  # 最佳模型保存间隔（大于num个epoch,且超过最小改善幅度，保存一次最佳模型）
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 
-batch_size: int = 1        # 单张图像过拟合
-epochs: int = 3000          # 测试epoch数量
+batch_size: int = 2        # 单张图像过拟合
+epochs: int = 5000          # 测试epoch数量
 
 
 
 sample_step: int = 20
 test_img_path: str = "./eval_data/demorj.png"
-actions = ['rj','rj','rj','rj','rj','rj','rj','rj']
+actions = ['rj','rj','rj','rj','rj','rj']
+actions1 = ['r','r','r','r','r','r']
+actions2 = ['rj','rj','rj','rj','rj','rj']

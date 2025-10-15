@@ -357,7 +357,8 @@ def train():
         logger.info(stats_message)
         
         # 训练完成后进行测试
-        model_test(cfg.test_img_path, cfg.actions, model, device_obj, cfg.sample_step,epochs)
+        model_test(cfg.test_img_path, cfg.actions1, model, device_obj, cfg.sample_step,epochs)
+        model_test(cfg.test_img_path, cfg.actions2, model, device_obj, cfg.sample_step, epochs)
     
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
