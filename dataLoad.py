@@ -22,6 +22,7 @@ class MarioDataset(Dataset):
         self.num_workers = num_workers
         self.image_files = [] # image files path (xxx.png)
         self.actions = [] # action (0-255)
+        self.nonterminals = []
         self._load_data()
         self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
@@ -47,43 +48,70 @@ class MarioDataset(Dataset):
         
         print(f"Found {len(subdirs)} subdirectories to scan")
         
-        # 并行处理每个子目录
+        # 并行处理每个子目录，每个子目录内已按帧号排序
         with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
             futures = [executor.submit(MarioDataset._scan_directory, subdir) for subdir in subdirs]
             
             for future in futures:
-                files, actions = future.result()
+                files, actions, nonterminals = future.result()
                 self.image_files.extend(files)
                 self.actions.extend(actions)
+                self.nonterminals.extend(nonterminals)
         
-        print(f"✅ Loaded {len(self.image_files)} valid images")
+        print(f"✅ Loaded {len(self.image_files)} valid images from {len(subdirs)} levels")
     
     @staticmethod
     def _scan_directory(directory):
-        """扫描单个目录，返回文件路径和动作"""
-        files = []
-        actions = []
+        """扫描单个目录，返回文件路径和动作，按帧号排序"""
+        file_data = []  # 存储(file_path, action, nonterminal, frame_num)的列表
         
         for file in os.listdir(directory):
             if file.lower().endswith('.png'):
                 file_path = os.path.join(directory, file)
-                action = MarioDataset._extract_action_from_filename_static(file)
-                if action is not None:
-                    files.append(file_path)
-                    actions.append(action)
+                action, nonterminal = MarioDataset._extract_action_nonterminal_from_filename_static(file)
+                frame_num = MarioDataset._extract_frame_number_from_filename_static(file)
+                
+                if action is not None and frame_num is not None:
+                    file_data.append((file_path, action, nonterminal, frame_num))
         
-        return files, actions
+        # 按帧号排序
+        file_data.sort(key=lambda x: x[3])
+        
+        # 分离数据
+        files = [item[0] for item in file_data]
+        actions = [item[1] for item in file_data]
+        nonterminals = [item[2] for item in file_data]
+        
+        return files, actions, nonterminals
     
     @staticmethod
-    def _extract_action_from_filename_static(filename: str) -> Optional[int]:
-        """静态方法版本的动作提取函数"""
-        pattern = r'_a(\d+)_'
+    def _extract_frame_number_from_filename_static(filename: str) -> Optional[int]:
+        """从文件名中提取帧号"""
+        pattern = r'_f(\d+)_'
         match = re.search(pattern, filename)
         if match:
-            action = int(match.group(1))
-            action_mapped = MarioDataset._map_action_to_playgenaction_static(action)
-            return action_mapped
+            return int(match.group(1))
         return None
+    
+    @staticmethod
+    def _extract_action_nonterminal_from_filename_static(filename: str) -> Optional[int]:
+        """静态方法版本的动作提取函数"""
+        pattern1 = r'_a(\d+)_'
+        pattern2 = r'_nt(\d+)_'
+        match1 = re.search(pattern1, filename)
+        match2 = re.search(pattern2, filename)
+        if match1:
+            action = int(match1.group(1))
+            action_mapped = MarioDataset._map_action_to_playgenaction_static(action)
+        else:
+            action_mapped = None
+        if match2:
+            nonterminal = int(match2.group(2))
+            nonterminal = nonterminal==1
+        else:
+            nonterminal = False
+        return action_mapped,nonterminal
+
     
     @staticmethod
     def _map_action_to_playgenaction_static(action: int) -> int:
@@ -128,8 +156,9 @@ class MarioDataset(Dataset):
         
         # 获取动作
         action = self.actions[idx] if idx < len(self.actions) else 0
+        nonterminal = self.nonterminals[idx] if idx < len(self.nonterminals) else False
         
-        return image, action
+        return image, action, nonterminal
 
 
 def build_video_sequence_batch(dataset, start_indices, num_frames):
@@ -148,10 +177,10 @@ def build_video_sequence_batch(dataset, start_indices, num_frames):
         video_nonterminals = []
         
         for frame_idx in range(start_idx, end_idx):
-            image, action = dataset[frame_idx]
+            image, action, nonterminal = dataset[frame_idx]
             video_images.append(image)
             video_actions.append(action)
-            video_nonterminals.append(True)
+            video_nonterminals.append(nonterminal)
         
         # 转换为tensor
         images_tensor = torch.stack(video_images, dim=0).unsqueeze(0)  # [b, num_frames, 3, 128, 128]
