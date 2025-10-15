@@ -161,8 +161,6 @@ class DiffusionForcingBase(nn.Module):
         else:
             init_z = torch.zeros(batch_size, *self.z_shape)
             init_z = init_z.to(xs.device)
-
-        print(f"preprocess batch,xs:{xs.shape},condition: {conditions},masks: {masks}, z:{init_z.shape}")
         return xs, conditions, masks, init_z
 
     def reweigh_loss(self, loss, weight=None):
@@ -171,9 +169,6 @@ class DiffusionForcingBase(nn.Module):
             expand_dim = len(loss.shape) - len(weight.shape) - 1
             weight = rearrange(weight, "(t fs) b ... -> t b fs ..." + " 1" * expand_dim, fs=self.frame_stack)
             loss = loss * weight
-            print("reweighloss:",loss)
-            breakpoint()
-
         return loss.mean()
 
     def training_step(self, batch):

@@ -17,19 +17,19 @@ img_size = 256
 img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
 num_actions: int = 46
-num_frames: int = 16
-frame_interval: int = 16
+num_frames: int = 8
+frame_interval: int = 8
 
 data_save_epoch: int = 10  # loss数据print和保存至log日志的间隔 \log
-gif_save_epoch: int = 100  # gif保存间隔 \output
+gif_save_epoch: int = 200  # gif保存间隔 \output
 best_save_interval: int = 50000  # 最佳模型保存间隔（大于num个epoch,且超过最小改善幅度，保存一次最佳模型）
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 
 batch_size: int = 1        # 单张图像过拟合
-epochs: int = 2000          # 测试epoch数量
+epochs: int = 3000          # 测试epoch数量
 
 
 
 sample_step: int = 20
-test_img_path: str = "./eval_data/demorj.png"
-actions = ['rj','rj','rj','rj']
+test_img_path: str = "./eval_data/demor.png"
+actions = ['r','r','r','r','r','r','r','r']
