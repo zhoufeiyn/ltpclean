@@ -74,7 +74,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,epochs='infer'):
+def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,name='infer'):
     """测试训练好的模型"""
     
     # 检查输入参数
@@ -102,7 +102,7 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
             
         if not os.path.isdir('./output/'):
             os.makedirs('./output/')
-        imageio.mimsave(f'./output/output_{epochs}.gif', img_list, duration=0.2)
+        imageio.mimsave(f'./output/output_{name}.gif', img_list, duration=0.2)
         print("✅ output.gif saved in ./output/")
         
     except Exception as e:

@@ -282,12 +282,8 @@ def train():
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
             if batch_count % (6*data_save_iter) ==0:
-                model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_r')
-                model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_rj')
-                model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_r')
-                model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_rj')
-                model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_r')
-                model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_batch{batch_count + 1}_rj')
+                model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_r')
+                model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_rj')
 
 
         # 一个epoch
