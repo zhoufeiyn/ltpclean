@@ -18,20 +18,25 @@ img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
 num_actions: int = 46
 num_frames: int = 8
-frame_interval: int = 8
+frame_interval: int = 2
 
-data_save_epoch: int = 10  # loss数据print和保存至log日志的间隔 \log
-gif_save_epoch: int = 200  # gif保存间隔 \output
-best_save_interval: int = 50000  # 最佳模型保存间隔（大于num个epoch,且超过最小改善幅度，保存一次最佳模型）
+data_save_iter: int = 50  # loss数据print和保存至log日志的间隔 \log
+data_save_epoch: int = 1  # avgloss和gif保存间隔 \output
+
+checkpoint_save_epoch: int = 1  # checkpoint保存间隔
+
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 
-batch_size: int = 2        # 单张图像过拟合
-epochs: int = 5000          # 测试epoch数量
+batch_size: int = 64        # 单张图像过拟合
+epochs: int = 3          # 测试epoch数量
 
 
 
 sample_step: int = 20
-test_img_path: str = "./eval_data/demorj.png"
+test_img_path: str = "./eval_data/demo.png"
+test_img_path1: str = "./eval_data/demo1.png"
+test_img_path2: str = "./eval_data/demo2.png"
+test_img_path3: str = "./eval_data/demo3.png"
 actions = ['rj','rj','rj','rj','rj','rj']
 actions1 = ['r','r','r','r','r','r']
 actions2 = ['rj','rj','rj','rj','rj','rj']

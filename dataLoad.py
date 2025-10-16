@@ -119,29 +119,41 @@ class MarioDataset(Dataset):
             nonterminal = False
         return action_mapped,nonterminal
 
-    
     @staticmethod
     def _map_action_to_playgenaction_static(action: int) -> int:
-        """静态方法版本的动作映射函数"""
-        if action == 20: # r
-            return 1
-        elif action == 148 or 144: # rj
-            return 2
-        elif action == 48: # l
-            return 3
-        elif action == 176 or 144: # lj
-            return 4
-        elif action == 128: # j
-            return 5
-        elif action == 16: # f
-            return 6
-        elif action == 0:
+        """静态方法版本的动作映射函数
+        映射规则：
+        - 0/45: 无动作或未识别
+        - 1: 右移 (r)
+        - 2: 向右跳 (rj)
+        - 3: 左移 (l)
+        - 4: 向左跳 (lj)
+        - 5: 原地跳 (j)
+        - 6: 加速或下蹲 (b 或 bd)
+        - 7: 加速向右下 (brd)
+        - 8: 加速向左下 (bld)
+        """
+        if action == 0: # 无动作
             return 0
+        if action == 20:  # 00010100 -> right + B => 向右跑
+            return 1  # r
+        elif action == 148:  # 10010100 -> A + right + B => 向右加速跳
+            return 2  # rj
+        elif action == 48:  # 00110000 -> left + B => 向左跑
+            return 3  # l
+        elif action == 176:  # 10110000 -> A + left + B => 向左加速跳
+            return 4  # lj
+        elif action == 144:  # 10010000 -> A + B => 原地加速跳
+            return 5  # j
+        elif action in (16, 18):  # 00010000 或 00010010 -> B 或 B+down => 加速或下蹲
+            return 6  # b / bd
+        elif action == 22:  # 00010110 -> B + right + down => 向右加速下蹲
+            return 7  # brd
+        elif action == 50:  # 00110010 -> B + left + down => 向左加速下蹲
+            return 8  # bld
         else:
-            return 0
-    
+            return 45  # 未识别
 
-        
     def __len__(self):
         return len(self.image_files)
     
