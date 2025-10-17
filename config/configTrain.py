@@ -1,7 +1,7 @@
 """User Model Global Config"""
 model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 action_space = 7
-model_path = "model_epoch10000_20251012_07.pth" #"model.pth"
+model_path = "model_epoch5000_20251015_06.pth" #"model.pth"
 device = 'cuda:0'
 
 """Local Web"""

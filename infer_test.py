@@ -140,7 +140,7 @@ if __name__ =="__main__":
     model.load_state_dict(state_dict["network_state_dict"],strict=False)
     model.eval().to(device)
 
-    model_test(args.img,args.actions,model,device,sample_step,output_dir='output')
+    model_test(args.img,args.actions,model,device,sample_step,f'{args.img[-9:-4]}_test',epoch=None,output_dir='output')
     # python infer_test.py -i 'eval_data/demo1.png' -a r,r,r,r,r,r
 
 
