@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 from infer_test import model_test
 import logging
+import random
 # 导入数据加载模块
 from dataLoad import MarioDataset, build_video_sequence_batch
 
@@ -147,8 +148,9 @@ def train():
     frame_interval = cfg.frame_interval
     model_name = cfg.model_name
 
-    data_save_iter = cfg.data_save_iter
-    data_save_epoch = cfg.data_save_epoch
+    loss_log_iter = cfg.loss_log_iter
+    gif_save_iter = cfg.gif_save_iter
+    gif_save_epoch = cfg.gif_save_epoch
     checkpoint_save_epoch = cfg.checkpoint_save_epoch
 
     # 使用Algorithm类加载完整的预训练模型（包含VAE和Diffusion）
@@ -211,14 +213,18 @@ def train():
     for epoch in range(epochs):
         total_loss = 0
         batch_count = 0
+        
+        # 🔥 每个epoch开始时shuffle视频序列顺序
+        shuffled_valid_starts = valid_starts.copy()
+        random.shuffle(shuffled_valid_starts)
 
         # 按batch处理 - 优化版本
         for batch_start in range(0, num_valid_videos, batch_size):
             batch_end = min(batch_start + batch_size, num_valid_videos)
             current_batch_size = batch_end - batch_start
 
-            # 获取当前batch的起始索引
-            current_start_indices = valid_starts[batch_start:batch_end]
+            # 获取当前batch的起始索引（现在是shuffled的）
+            current_start_indices = shuffled_valid_starts[batch_start:batch_end]
 
             # 批量构建视频序列
             batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(
@@ -277,13 +283,13 @@ def train():
                 raise e
 
             # 查看batch里的loss和 gif
-            if batch_count % data_save_iter ==0:
+            if batch_count % loss_log_iter ==0:
                 batch_loss = loss.item()
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
-            if batch_count % (6*data_save_iter) ==0:
-                model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_r')
-                model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_rj')
+            # if batch_count % gif_save_iter ==0:
+            #     model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_r')
+            #     model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_batch{batch_count}_rj')
 
 
         # 一个epoch
@@ -291,32 +297,32 @@ def train():
             avg_loss = total_loss / batch_count
             # scheduler.step(avg_loss)
             final_avg_loss = avg_loss  # 更新最终的avg_loss
-
-            # 每 cfg.data_save_iter 个epoch打印一次损失并记录到历史
-            if (epoch + 1) % data_save_epoch == 0:
-                loss_history.append(avg_loss)  # 只记录打印的损失值
-                loss_message = f"Epoch {epoch + 1}/{epochs}, Average Loss: {avg_loss:.6f}"
-
-                logger.info(loss_message)
-
-                # 检查是否是最佳模型，如果是，且epoch> best_save_interval，则保存最佳模型
-                is_best = avg_loss < best_loss
-
-                if is_best:
-                    # 立即更新最佳损失
-                    improvement = (best_loss - avg_loss) / best_loss if best_loss != float('inf') else 1.0
-                    best_loss = avg_loss
-                    best_message = f"This is the new best loss(improvement: {improvement:.2%})"
-                    logger.info(best_message)
+            # 每 1 个epoch打印一次损失并记录到历史
+            loss_history.append(avg_loss)  # 只记录打印的损失值
+            loss_message = f"Epoch {epoch + 1}/{epochs}, Average Loss: {avg_loss:.6f}"
+            logger.info(loss_message)
+            # 检查是否是最佳模型，如果是，且epoch> best_save_interval，则保存最佳模型
+            is_best = avg_loss < best_loss
+            if is_best:
+                # 立即更新最佳损失
+                improvement = (best_loss - avg_loss) / best_loss if best_loss != float('inf') else 1.0
+                best_loss = avg_loss
+                best_message = f"This is the new best loss(improvement: {improvement:.2%})"
+                logger.info(best_message)
 
         # 每gif_save_epoch个epoch run一次test,保存 gif
-        if (epoch + 1) % data_save_epoch == 0:
-            model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r')
-            model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj')
-            model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r')
-            model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj')
-            model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r')
-            model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj')
+        if (epoch + 1) % gif_save_epoch == 0:
+            path = f'output/epoch{epoch+1}'
+            if os.path.exists(path):
+                import shutil
+                shutil.rmtree(path)
+            os.mkdir(path)
+            model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r')
+            model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj')
+            model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r')
+            model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj')
+            model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r')
+            model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{path}/{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj')
 
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
@@ -359,7 +365,7 @@ def train():
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
-        final_loss_curve_path = save_loss_curve(loss_history, data_save_epoch, save_path="output")
+        final_loss_curve_path = save_loss_curve(loss_history, 1, save_path="output")
         logger.info(f"Final loss curve saved to: {final_loss_curve_path}")
 
     # 记录日志文件路径
