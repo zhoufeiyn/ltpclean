@@ -28,7 +28,7 @@ checkpoint_save_epoch: int = 15  # checkpoint保存间隔
 
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 
-batch_size: int = 24        # 单张图像过拟合
+batch_size: int = 30        # 单张图像过拟合
 epochs: int = 64          # 测试epoch数量
 
 

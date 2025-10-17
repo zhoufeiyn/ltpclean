@@ -312,6 +312,10 @@ def train():
 
         # 每gif_save_epoch个epoch run一次test,保存 gif
         if (epoch + 1) % gif_save_epoch == 0:
+            # 确保output目录存在
+            if not os.path.exists('output'):
+                os.makedirs('output')
+            
             path = f'output/epoch{epoch+1}'
             if os.path.exists(path):
                 import shutil
