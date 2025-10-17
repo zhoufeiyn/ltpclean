@@ -102,16 +102,14 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
             
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
-        if not epoch:
-            if not os.path.exists(f'{output_dir}/{name}.gif'):
-                os.makedirs(f'{output_dir}/{name}.gif')
-            else:
-                os.remove(f'{output_dir}/{name}.gif')
+        if epoch:
+            if not os.path.exists(f'{output_dir}/epoch{epoch}'):
+                os.makedirs(f'{output_dir}/epoch{epoch}')
+            imageio.mimsave(f'{output_dir}/epoch{epoch}/{name}.gif', img_list, duration=0.2)
+            print(f"✅ output.gif saved in {output_dir}/epoch{epoch}/")
+        else:
             imageio.mimsave(f'{output_dir}/{name}.gif', img_list, duration=0.2)
             print(f"✅ output.gif saved in {output_dir}/")
-        else:
-            imageio.mimsave(f'{output_dir}/{epoch}/{name}.gif', img_list, duration=0.2)
-            print(f"✅ output.gif saved in {output_dir}/{epoch}/") 
 
     except Exception as e:
         print(f"❌ Error during model testing: {e}")
@@ -142,7 +140,7 @@ if __name__ =="__main__":
     model.load_state_dict(state_dict["network_state_dict"],strict=False)
     model.eval().to(device)
 
-    model_test(args.img,args.actions,model,device,sample_step)
+    model_test(args.img,args.actions,model,device,sample_step,output_dir='output')
     # python infer_test.py -i 'eval_data/demo1.png' -a r,r,r,r,r,r
 
 

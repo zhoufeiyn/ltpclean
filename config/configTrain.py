@@ -22,9 +22,9 @@ frame_interval: int = 2
 
 loss_log_iter: int = 40  # loss数据print和保存至log日志的间隔 \log
 gif_save_iter: int = 400
-gif_save_epoch: int = 8  # avgloss和gif保存间隔 \output
+gif_save_epoch: int = 1  # avgloss和gif保存间隔 \output
 
-checkpoint_save_epoch: int = 15  # checkpoint保存间隔
+checkpoint_save_epoch: int = 1  # checkpoint保存间隔
 
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 
