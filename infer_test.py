@@ -74,7 +74,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,name='infer'):
+def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
     """测试训练好的模型"""
     
     # 检查输入参数
@@ -100,11 +100,19 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
                 obs = model.vae.decode(obs / 0.18215)
             img_list.append(get_web_img(obs[0].cpu().numpy()))
             
-        if not os.path.isdir('./output/'):
-            os.makedirs('./output/')
-        imageio.mimsave(f'./output/output_{name}.gif', img_list, duration=0.2)
-        print("✅ output.gif saved in ./output/")
-        
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        if not epoch:
+            if not os.path.exists(f'{output_dir}/{name}.gif'):
+                os.makedirs(f'{output_dir}/{name}.gif')
+            else:
+                os.remove(f'{output_dir}/{name}.gif')
+            imageio.mimsave(f'{output_dir}/{name}.gif', img_list, duration=0.2)
+            print(f"✅ output.gif saved in {output_dir}/")
+        else:
+            imageio.mimsave(f'{output_dir}/{epoch}/{name}.gif', img_list, duration=0.2)
+            print(f"✅ output.gif saved in {output_dir}/{epoch}/") 
+
     except Exception as e:
         print(f"❌ Error during model testing: {e}")
         import traceback
