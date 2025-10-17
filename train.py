@@ -149,7 +149,7 @@ def train():
     model_name = cfg.model_name
 
     loss_log_iter = cfg.loss_log_iter
-    gif_save_iter = cfg.gif_save_iter
+    # gif_save_iter = cfg.gif_save_iter
     gif_save_epoch = cfg.gif_save_epoch
     checkpoint_save_epoch = cfg.checkpoint_save_epoch
 
@@ -350,12 +350,12 @@ def train():
         logger.info(stats_message)
 
         # 训练完成后进行测试
-        model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch=epochs,output_dir='output')
-        model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch=epochs,output_dir='output')
-        model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r',epoch=epochs,output_dir='output')
-        model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj',epoch=epochs,output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_r',epoch=epochs,output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_rj',epoch=epochs,output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
