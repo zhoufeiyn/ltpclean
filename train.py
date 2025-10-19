@@ -219,31 +219,10 @@ def train():
 
     # 使用Algorithm类加载完整的预训练模型（包含VAE和Diffusion）
     model = Algorithm(model_name, device_obj)
-    # 获取VAE和Diffusion模型
-    vae = SDVAE().to(device_obj)
-    
-    # 加载您自己训练的VAE权重
-    custom_vae_path = cfg.vae_model  
-    if custom_vae_path and os.path.exists(custom_vae_path):
-        print(f"📥 load your own vae ckpt: {custom_vae_path}")
-        custom_state_dict = torch.load(custom_vae_path, map_location=device_obj)
-        vae.load_state_dict(custom_state_dict['network_state_dict'], strict=False)
-        print("✅ your vae ckpt loaded successfully！")
-    else:
-        print("ℹ️ use default pre-trained vae ckpt")
-
     model = model.to(device_obj)
     diffusion_model = model.df_model
 
-    if vae is not None:
-        vae.eval()
-        for param in vae.parameters():  # freeze VAE parameters
-            param.requires_grad = False
-        print("✅ VAE already loaded，VAE parameters has been frozen")
-    else:
-        print("⚠️ Cannot find VAE model")
-    epochs, batch_size = cfg.epochs, cfg.batch_size
-
+    # 初始化优化器
     opt = diffusion_model.configure_optimizers_gpt()
     
     # 初始化训练状态
@@ -279,6 +258,28 @@ def train():
             print(f"⚠️ diffusion forcing pretrained checkpoint not found: {checkpoint_path}, using random initialized model")
         print("🆕 Starting fresh training")
 
+    # 获取VAE和Diffusion模型
+    vae = SDVAE().to(device_obj)
+    
+    # 加载您自己训练的VAE权重
+    custom_vae_path = cfg.vae_model  
+    if custom_vae_path and os.path.exists(custom_vae_path):
+        print(f"📥 load your own vae ckpt: {custom_vae_path}")
+        custom_state_dict = torch.load(custom_vae_path, map_location=device_obj)
+        vae.load_state_dict(custom_state_dict['network_state_dict'], strict=False)
+        print("✅ your vae ckpt loaded successfully！")
+    else:
+        print("ℹ️ use default pre-trained vae ckpt")
+
+    if vae is not None:
+        vae.eval()
+        for param in vae.parameters():  # freeze VAE parameters
+            param.requires_grad = False
+        print("✅ VAE already loaded，VAE parameters has been frozen")
+    else:
+        print("⚠️ Cannot find VAE model")
+    epochs, batch_size = cfg.epochs, cfg.batch_size
+
     print("---1. start training----")
     print("---2. load dataset---")
     total_samples = len(dataset)
@@ -293,6 +294,7 @@ def train():
 
     # 初始化损失历史记录
     loss_history = []
+    final_avg_loss = 0  # 用于保存最终的avg_loss
 
     # 预计算所有有效的视频序列起始位置,间隔一个frame_interval取一个video sequence, 最终剩下不足一个video的扔掉
     valid_starts = []
