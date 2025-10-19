@@ -1,7 +1,6 @@
-from flask import Flask, render_template, request, jsonify
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, join_room, leave_room
 import base64
-import numpy as np
 from PIL import Image
 from io import BytesIO
 import queue
@@ -9,7 +8,7 @@ from threading import Thread, Event
 import torch
 import time
 from config.configTrain import *
-from utils import read_model, get_data, init_simulator, get_web_img
+from utils.utils import read_model, get_data, init_simulator, get_web_img
 
 """Model info"""
 frame_rate = 1/20

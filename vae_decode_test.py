@@ -1,9 +1,27 @@
-from models.vae.sdxlvae import SDXLVAE
+from models.vae.sdvae import SDVAE
 import os
 import numpy as np
 from PIL import Image
-from infer_test import get_img_data,get_web_img
+import torchvision.transforms as transforms
 import torch
+def get_img_data(img_path):
+    img = Image.open(img_path).convert('RGB')
+    transform = transforms.Compose([
+        # transforms.Resize((image_size, image_size)),
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
+    ])
+    img = transform(img)
+    img = img.unsqueeze(0)
+    return img
+
+def get_web_img(img):
+    # img.shape = [c, h, w] 3,256,256
+    img_3ch = np.transpose(img, (1,2,0)) # [h, w, c]
+    img_3ch = np.clip(img_3ch*0.5+0.5, 0, 1)
+    img_3ch = (img_3ch*255.0).astype(np.uint8)
+    return img_3ch
 def decode():
   out_dir='decode_test/'
   if not os.path.exists(out_dir):
@@ -18,7 +36,7 @@ def decode():
               image_paths.append(file_path)
 
   device ="cuda:0"
-  vae = SDXLVAE().to(device)
+  vae = SDVAE().to(device)
   vae.eval()
   with torch.no_grad():
       for p in image_paths:

@@ -8,7 +8,7 @@ import numpy as np
 import imageio
 from algorithm import Algorithm
 from config.configTrain import *
-from models.vae.sdxlvae import SDXLVAE
+from models.vae.sdvae import SDVAE
 def get_jave_7action(key):
     if key == "r":
         action = 1
@@ -85,7 +85,14 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
     if not os.path.exists(img_path):
         print(f"❌ Error: Test image not found: {img_path}")
         return
+    
+    # 保存当前模型状态
+    was_training = model.training
+    vae_was_training = model.vae.training if hasattr(model, 'vae') and model.vae is not None else None
+    
     try:
+        # 设置为评估模式
+        model.eval()
         img_list=[]
         batch_data={}
         batch_data['observations']=get_img_data(img_path) #(1,3, 256,256)
@@ -115,6 +122,16 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
         print(f"❌ Error during model testing: {e}")
         import traceback
         traceback.print_exc()
+    finally:
+        # 恢复模型原始状态
+        if was_training:
+            model.train()
+        # 恢复 VAE 的原始状态
+        if hasattr(model, 'vae') and model.vae is not None and vae_was_training is not None:
+            if vae_was_training:
+                model.vae.train()
+            else:
+                model.vae.eval()
 
 def parse_comma_separated_list(value):
     return value.split(',')
@@ -133,7 +150,7 @@ if __name__ =="__main__":
     args = arg()
     sample_step = args.sample_step
     model = Algorithm(model_name,device)
-    vae = SDXLVAE()
+    vae = SDVAE()
     model.vae = vae
 
     state_dict = torch.load(os.path.join("ckpt",model_path),map_location=device,weights_only=False)

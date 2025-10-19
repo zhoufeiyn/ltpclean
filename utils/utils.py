@@ -13,7 +13,7 @@ import cv2
 def read_model(model_name, model_path, action_space, device='cpu'):
     model = Algorithm(model_name,device)
     state_dict = torch.load(
-        osp.join("ckpt",model_path),
+        osp.join("../ckpt", model_path),
         map_location=torch.device(device),weights_only=False
     )
     model.load_state_dict(state_dict['network_state_dict'],strict=False)

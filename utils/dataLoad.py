@@ -213,3 +213,14 @@ def build_video_sequence_batch(dataset, start_indices, num_frames):
     
     return batch_images, batch_actions, batch_nonterminals
 
+
+def build_img_batch(dataset, start_indices,batch_size):
+    """批量构建图片训练VAE"""
+    batch_images = []
+    # 批量获取数据
+    for idx in range(batch_size):
+        image, _, _= dataset[start_indices+idx]
+        batch_images.append(image)
+    # 转换为tensor
+    images_tensor = torch.stack(batch_images, dim=0)  # [b, 3, 256, 256]
+    return images_tensor

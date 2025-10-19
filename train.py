@@ -1,6 +1,6 @@
 # 0920 update: try to overfit level1-1 in one directory
 
-from models.vae.sdxlvae import SDXLVAE
+from models.vae.sdvae import SDVAE
 from algorithm import Algorithm
 import torch
 import config.configTrain as cfg
@@ -11,7 +11,7 @@ from infer_test import model_test
 import logging
 import random
 # 导入数据加载模块
-from dataLoad import MarioDataset, build_video_sequence_batch
+from utils.dataLoad import MarioDataset, build_video_sequence_batch
 
 device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -156,7 +156,7 @@ def train():
     # 使用Algorithm类加载完整的预训练模型（包含VAE和Diffusion）
     model = Algorithm(model_name, device_obj)
     # 获取VAE和Diffusion模型
-    vae = SDXLVAE().to(device_obj)
+    vae = SDVAE().to(device_obj)
     model.vae = vae
     # 加载预训练checkpoint
     checkpoint_path = os.path.join(cfg.ckpt_path, cfg.model_path)
@@ -196,7 +196,6 @@ def train():
 
     # 初始化最佳损失跟踪
     best_loss = float('inf')
-    min_improvement = cfg.min_improvement  # 最小改善幅度
     final_avg_loss = 0  # 用于保存最终的avg_loss
 
     # 初始化损失历史记录

@@ -2,11 +2,12 @@
 
 
 import torch
+
 import config.configTrain as cfg
 
 
 # 导入数据加载模块
-from dataLoad import MarioDataset, build_video_sequence_batch
+from utils.dataLoad import MarioDataset, build_video_sequence_batch
 
 device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
