@@ -53,13 +53,13 @@ def get_img_data(img_path):
     img = img.unsqueeze(0)
     return img
 
-def init_simulator(model, batch):
+def init_simulator(model,vae, batch):
     obs = batch["observations"]
 
-    latent_dist = model.vae.encode(obs.to(model.device))
+    latent_dist = vae.encode(obs.to(model.device))
 
     latent = latent_dist.sample()
-    decoded_obs = model.vae.decode(latent)
+    decoded_obs = vae.decode(latent)
 
     latent_for_df = latent * 0.18215
     latent_for_df = latent_for_df.reshape(4, 32, 32)
@@ -74,7 +74,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
+def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None,vae=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
     """测试训练好的模型"""
     
     # 检查输入参数
@@ -88,7 +88,7 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
     
     # 保存当前模型状态
     was_training = model.training
-    vae_was_training = model.vae.training if hasattr(model, 'vae') and model.vae is not None else None
+    vae_was_training =vae.training
     
     try:
         # 设置为评估模式
@@ -97,14 +97,14 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
         batch_data={}
         batch_data['observations']=get_img_data(img_path) #(1,3, 256,256)
         with torch.no_grad():
-            zeta,obs_start = init_simulator(model,batch_data) #(1,32,32,32)
+            zeta,obs_start = init_simulator(model,vae,batch_data) #(1,32,32,32)
         img_list.append(get_web_img(obs_start[0].cpu().numpy()))
         actions=get_action_sequence(actions)
         for a in actions:
             with torch.no_grad():
                 a = torch.tensor([a],device=device).long()
                 zeta, obs = model.df_model.step(zeta, a.float(), sample_step)
-                obs = model.vae.decode(obs / 0.18215)
+                obs = vae.decode(obs / 0.18215)
             img_list.append(get_web_img(obs[0].cpu().numpy()))
             
         if not os.path.isdir(output_dir):
@@ -127,11 +127,11 @@ def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None, device
         if was_training:
             model.train()
         # 恢复 VAE 的原始状态
-        if hasattr(model, 'vae') and model.vae is not None and vae_was_training is not None:
-            if vae_was_training:
-                model.vae.train()
-            else:
-                model.vae.eval()
+
+        if vae_was_training:
+            vae.train()
+        else:
+            vae.eval()
 
 def parse_comma_separated_list(value):
     return value.split(',')
@@ -160,13 +160,11 @@ if __name__ =="__main__":
     else:
         print("ℹ️ use default pre-trained vae ckpt")
 
-    model.vae = vae
-
     state_dict = torch.load(os.path.join("ckpt",model_path),map_location=device,weights_only=False)
     model.load_state_dict(state_dict["network_state_dict"],strict=False)
     model.eval().to(device)
 
-    model_test(args.img,args.actions,model,device,sample_step,f'{args.img[-9:-4]}_test',epoch=None,output_dir='output')
+    model_test(args.img,args.actions,model,vae,device,sample_step,f'{args.img[-9:-4]}_test',epoch=None,output_dir='output')
     # python infer_test.py -i 'eval_data/demo1.png' -a r,r,r,r,r,r
 
 

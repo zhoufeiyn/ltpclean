@@ -170,7 +170,7 @@ def load_model(model, optimizer, checkpoint_path, device_obj):
 
 
 
-def vae_encode(batch_data_images, vae_model, device, scale_factor=1):
+def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
     """vae encode the images"""
     # 将图像编码到潜在空间: [batch_size, num_frames, 3, 128, 128] -> [batch_size, num_frames, 4, 32, 32]
     with torch.no_grad():
@@ -231,8 +231,7 @@ def train():
         print("✅ your vae ckpt loaded successfully！")
     else:
         print("ℹ️ use default pre-trained vae ckpt")
-    
-    model.vae = vae
+
     model = model.to(device_obj)
     diffusion_model = model.df_model
 
@@ -404,12 +403,8 @@ def train():
         if (epoch + 1) % gif_save_epoch == 0:
             # 确保output目录存在
 
-            model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
+            model_test(cfg.test_img_path1, cfg.actions1, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
+            model_test(cfg.test_img_path1, cfg.actions2, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
 
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
@@ -443,12 +438,8 @@ def train():
         logger.info(stats_message)
 
         # 训练完成后进行测试
-        model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path2, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path2, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path3[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions1, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions2, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
