@@ -6,12 +6,20 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 
-from utils.dataLoad import MarioDataset, build_img_batch
+from utils.dataLoad import MarioDataset
 from train import setup_logging, save_loss_curve
+
+def build_img_batch_from_indices(dataset, indices):
+    """根据索引列表构建图片批次"""
+    batch_images = []
+    for idx in indices:
+        image, _, _ = dataset[idx]
+        batch_images.append(image)
+    return torch.stack(batch_images, dim=0)
 
 device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-def save_model_with_optimizer(model, optimizer, scheduler, epochs, final_loss, best_loss, loss_history, path=cfg.ckpt_path):
+def save_model_with_optimizer(model, optimizer, epochs, final_loss, best_loss, loss_history, path=cfg.ckpt_path):
     """保存训练好的模型到ckpt目录，包含优化器和调度器状态"""
     if not os.path.exists(path):
         os.makedirs(path)
@@ -25,7 +33,6 @@ def save_model_with_optimizer(model, optimizer, scheduler, epochs, final_loss, b
     save_data = {
         'network_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-        'scheduler_state_dict': scheduler.state_dict(),
         'epoch': epochs,
         'loss': final_loss,
         'best_loss': best_loss,
@@ -43,34 +50,6 @@ def save_model_with_optimizer(model, optimizer, scheduler, epochs, final_loss, b
         print(f"❌ Save VAE model failed: {e}")
 
 
-def validate_model(model, val_dataset, device_obj, batch_size):
-    """验证模型性能"""
-    model.eval()
-    val_loss = 0
-    val_count = 0
-
-    with torch.no_grad():
-        for idx in range(0, len(val_dataset), batch_size):
-            batch_img = build_img_batch(val_dataset, idx, batch_size).to(device_obj)
-
-            try:
-                # VAE前向传播
-                encoded = model.encode(batch_img)
-                latent = encoded.sample()
-                decode_img = model.decode(latent)
-
-                # 只使用L1重建损失
-                loss = F.l1_loss(decode_img, batch_img)
-
-                val_loss += loss.item()
-                val_count += 1
-
-            except Exception as e:
-                print(f"❌ Error in validation: {e}")
-                continue
-
-    model.train()
-    return val_loss / val_count if val_count > 0 else float('inf')
 
 def vae_test(img_path, model, device_obj, e=None, out_dir='output/VAE' ):
     """测试VAE模型的编码解码效果"""
@@ -157,24 +136,11 @@ def train():
     dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
     model = SDVAE().to(device_obj)
     
-    # 分割训练集和验证集
+    # 使用全部数据进行训练
     total_samples = len(dataset)
-    train_size = int(0.9 * total_samples)  # 80%用于训练
-    val_size = total_samples - train_size   # 20%用于验证
+    train_size = total_samples
     
-    # # 创建随机索引分割（确保训练集和验证集都包含不同时间段的图片）
-    import random
-    indices = list(range(total_samples))
-    random.shuffle(indices)
-    
-    train_indices = indices[:train_size]
-    val_indices = indices[train_size:]
-    
-    # 创建训练和验证数据集
-    train_dataset = torch.utils.data.Subset(dataset, train_indices)
-    val_dataset = torch.utils.data.Subset(dataset, val_indices)
-    
-    print(f"📊 Dataset split: {train_size} training samples, {val_size} validation samples")
+    print(f"📊 Using all {train_size} samples for training")
 
     epochs = cfg.epochs
     loss_log_iter = cfg.loss_log_iter
@@ -183,7 +149,6 @@ def train():
     ckpt_save_epoch = cfg.checkpoint_save_epoch
 
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=1e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=10)
     
     # 检查是否有预训练检查点
     start_epoch = 0
@@ -206,7 +171,6 @@ def train():
             
             model.load_state_dict(checkpoint['network_state_dict'])
             opt.load_state_dict(checkpoint.get('optimizer_state_dict', {}))
-            scheduler.load_state_dict(checkpoint.get('scheduler_state_dict', {}))
             start_epoch = checkpoint.get('epoch', 0)
             best_loss = checkpoint.get('best_loss', float('inf'))
             loss_history = checkpoint.get('loss_history', [])
@@ -225,8 +189,17 @@ def train():
     for e in range(start_epoch, epochs):
         total_loss = 0
         batch_count = 0
-        for idx in range(0, train_size, batch_size):
-            batch_img = build_img_batch(train_dataset, idx, batch_size).to(device_obj)
+        
+        # 每个epoch开始时打乱数据索引
+        import random
+        indices = list(range(train_size))
+        random.shuffle(indices)
+        print(f"🔄 Epoch {e + 1}: Data shuffled, using {len(indices)} samples")
+        
+        for batch_idx in range(0, train_size, batch_size):
+            # 使用打乱后的索引获取数据
+            batch_indices = indices[batch_idx:batch_idx + batch_size]
+            batch_img = build_img_batch_from_indices(dataset, batch_indices).to(device_obj)
             try:
                 # VAE前向传播
                 encoded = model.encode(batch_img)
@@ -254,25 +227,20 @@ def train():
         # 一个epoch
         if batch_count > 0:
             avg_loss = total_loss / batch_count
-            
-            # 验证模型
-            val_loss = validate_model(model, val_dataset, device_obj, batch_size)
-            
-            scheduler.step(val_loss)  # 使用验证损失更新学习率
             final_avg_loss = avg_loss  # 更新最终的avg_loss
             
             # 每 1 个epoch打印一次损失并记录到历史
             loss_history.append(avg_loss)  # 只记录打印的损失值
-            loss_message = f"Epoch {e + 1}/{epochs}, Train Loss: {avg_loss:.6f}, Val Loss: {val_loss:.6f}"
+            loss_message = f"Epoch {e + 1}/{epochs}, Train Loss: {avg_loss:.6f}"
             logger.info(loss_message)
             
-            # 检查是否是最佳模型（基于验证损失）
-            is_best = val_loss < best_loss
+            # 检查是否是最佳模型（基于训练损失）
+            is_best = avg_loss < best_loss
             if is_best:
                 # 立即更新最佳损失
-                improvement = (best_loss - val_loss) / best_loss if best_loss != float('inf') else 1.0
-                best_loss = val_loss
-                best_message = f"This is the new best validation loss(improvement: {improvement:.2%})"
+                improvement = (best_loss - avg_loss) / best_loss if best_loss != float('inf') else 1.0
+                best_loss = avg_loss
+                best_message = f"This is the new best training loss(improvement: {improvement:.2%})"
                 logger.info(best_message)
 
         if (e + 1) % img_save_epoch == 0:
@@ -280,7 +248,7 @@ def train():
 
         if (e + 1) % ckpt_save_epoch == 0:
             current_loss = avg_loss if batch_count > 0 else 0
-            save_model_with_optimizer(model, opt, scheduler, e + 1, current_loss, best_loss, loss_history, path=cfg.ckpt_path)
+            save_model_with_optimizer(model, opt, e + 1, current_loss, best_loss, loss_history, path=cfg.ckpt_path)
             checkpoint_message = f"💾 Checkpoint saved at epoch {e + 1}"
             logger.info(checkpoint_message)
 
@@ -292,7 +260,7 @@ def train():
         print(save_message)
         logger.info(save_message)
 
-        save_model_with_optimizer(model, opt, scheduler, epochs, final_avg_loss, best_loss, loss_history, path=cfg.ckpt_path)
+        save_model_with_optimizer(model, opt, epochs, final_avg_loss, best_loss, loss_history, path=cfg.ckpt_path)
 
         # 记录训练统计信息
         stats_message = f"📊 training statistics: total epochs: {epochs}, best loss: {best_loss:.6f}, final loss: {final_avg_loss:.6f}, batches per epoch: {batch_count}"

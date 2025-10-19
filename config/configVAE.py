@@ -16,16 +16,13 @@ latent_size: int = 32
 
 loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
 
-img_save_epoch: int = 40  # avgloss和gif保存间隔 \output
+img_save_epoch: int = 25  # avgloss和gif保存间隔 \output
 
-checkpoint_save_epoch: int = 500  # checkpoint保存间隔
+checkpoint_save_epoch: int = 130  # checkpoint保存间隔
 
 
-batch_size: int = 30        # 单张图像过拟合
+batch_size: int = 28        # 单张图像过拟合
 epochs: int = 200          # 测试epoch数量
 
 
 test_img_path: str = "./eval_data/vae"
-
-
-
