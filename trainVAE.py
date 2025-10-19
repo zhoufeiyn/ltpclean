@@ -49,6 +49,29 @@ def save_model_with_optimizer(model, optimizer, epochs, final_loss, best_loss, l
     except Exception as e:
         print(f"❌ Save VAE model failed: {e}")
 
+def infer_test(img):
+    device_obj = torch.device(device)
+    model = SDVAE()
+    
+    # 只有当 model_path 不为空时才拼接路径
+    if cfg.model_path:
+        ckpt_path = os.path.join(cfg.ckpt_path, cfg.model_path)
+    else:
+        ckpt_path = cfg.ckpt_path
+    
+    if os.path.exists(ckpt_path):
+        print(f"📥 load pretrained checkpoint: {ckpt_path}")
+        state_dict = torch.load(ckpt_path, map_location=device_obj, weights_only=False)
+        model.load_state_dict(state_dict['network_state_dict'], strict=False)
+        print("ckpt loaded successfully")
+    else:
+        print(f"⚠️ Checkpoint not found: {ckpt_path}, use initialized model")
+    
+    model = model.to(device_obj)
+    vae_test(img, model, device_obj, 'infer')
+
+
+
 
 
 def vae_test(img_path, model, device_obj, e=None, out_dir='output/VAE' ):
@@ -62,7 +85,7 @@ def vae_test(img_path, model, device_obj, e=None, out_dir='output/VAE' ):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     # 确保输出目录存在
-    output_dir = out_dir+f"/epoch{e}"
+    output_dir = out_dir+f"/epoch{e+1}"
     os.makedirs(output_dir, exist_ok=True)
     
     # 获取所有图片文件
@@ -282,5 +305,22 @@ def train():
         print(final_log_message)
         logger.info(final_log_message)
 
+def arg():
+    import argparse
+    parser = argparse.ArgumentParser('vae train')
+    parser.add_argument('-tr',"--train", type = str)
+    parser.add_argument('-in',"--infer",type = str)
+    parser.add_argument('-i',"--img",type = str, default="eval_data/vae")
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    train()
+    args = arg()
+    if args.train == "tr":
+        print(" train...")
+        train()
+    elif args.infer == "in":
+        print(" infer..")
+        infer_test(args.img)
+    else:
+        print(" train...")
+        train()

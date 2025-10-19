@@ -151,6 +151,15 @@ if __name__ =="__main__":
     sample_step = args.sample_step
     model = Algorithm(model_name,device)
     vae = SDVAE()
+    custom_vae_path = vae_model
+    if custom_vae_path and os.path.exists(custom_vae_path):
+        print(f"📥 load your own vae ckpt: {custom_vae_path}")
+        vae_state_dict = torch.load(custom_vae_path, map_location=device)
+        vae.load_state_dict(vae_state_dict['network_state_dict'], strict=False)
+        print("✅ your vae ckpt loaded successfully！")
+    else:
+        print("ℹ️ use default pre-trained vae ckpt")
+
     model.vae = vae
 
     state_dict = torch.load(os.path.join("ckpt",model_path),map_location=device,weights_only=False)

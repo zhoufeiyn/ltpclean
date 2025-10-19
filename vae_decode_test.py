@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 import torch
+import config.configTrain as cfg
 def get_img_data(img_path):
     img = Image.open(img_path).convert('RGB')
     transform = transforms.Compose([
@@ -37,6 +38,14 @@ def decode():
 
   device ="cuda:0"
   vae = SDVAE().to(device)
+  custom_vae_path = cfg.vae_model
+  if custom_vae_path and os.path.exists(custom_vae_path):
+      print(f"📥 load your own vae ckpt: {custom_vae_path}")
+      custom_state_dict = torch.load(custom_vae_path, map_location=device)
+      vae.load_state_dict(custom_state_dict['network_state_dict'], strict=False)
+      print("✅ your vae ckpt loaded successfully！")
+  else:
+      print("ℹ️ use default pre-trained vae ckpt")
   vae.eval()
   with torch.no_grad():
       for p in image_paths:

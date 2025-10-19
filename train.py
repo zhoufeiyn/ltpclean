@@ -157,6 +157,17 @@ def train():
     model = Algorithm(model_name, device_obj)
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
+    
+    # 加载您自己训练的VAE权重
+    custom_vae_path = cfg.vae_model  
+    if custom_vae_path and os.path.exists(custom_vae_path):
+        print(f"📥 load your own vae ckpt: {custom_vae_path}")
+        custom_state_dict = torch.load(custom_vae_path, map_location=device_obj)
+        vae.load_state_dict(custom_state_dict, strict=False)
+        print("✅ your vae ckpt loaded successfully！")
+    else:
+        print("ℹ️ use default pre-trained vae ckpt")
+    
     model.vae = vae
     # 加载预训练checkpoint
     checkpoint_path = os.path.join(cfg.ckpt_path, cfg.model_path)
@@ -250,12 +261,12 @@ def train():
 
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
-            # # 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-            # batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
-            #
-            # # 同步扩展actions和nonterminals
-            # batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            # batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
+            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
+
+            # 同步扩展actions和nonterminals
+            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
