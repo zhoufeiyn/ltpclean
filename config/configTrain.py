@@ -5,6 +5,10 @@ model_path = "model_epoch8000_20251015_06.pth" #"model.pth"
 device = 'cuda:0'
 vae_model = 'ckpt/vae_epoch50_20251019_06.pth'
 
+"""Resume Training Config"""
+resume_training = False  # 是否继续训练
+resume_checkpoint_path = ""  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
+
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
 data_type='java'
