@@ -3,7 +3,7 @@ model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 action_space = 7
 model_path = "model_epoch5000_20251015_06.pth" #"model.pth"
 device = 'cuda:0'
-vae_model = 'ckpt/vae_epoch50_20251018_07.pth'
+vae_model = 'ckpt/vae_epoch50_20251019_06'
 
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
@@ -51,6 +51,6 @@ epochs: int = 2000          # 测试epoch数量
 
 sample_step: int = 20
 test_img_path1: str = "./eval_data/demo1.png"
-test_img_path2: str = "./eval_data/demo2.png"
+
 actions1 = ['r','r','r','r','r','r']
 actions2 = ['rj','rj','rj','rj','rj','rj']
