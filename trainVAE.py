@@ -51,7 +51,7 @@ def validate_model(model, val_dataset, device_obj, batch_size):
 
     with torch.no_grad():
         for idx in range(0, len(val_dataset), batch_size):
-            batch_img = build_img_batch(val_dataset, idx, batch_size)
+            batch_img = build_img_batch(val_dataset, idx, batch_size).to(device_obj)
 
             try:
                 # VAE前向传播
@@ -159,7 +159,7 @@ def train():
     
     # 分割训练集和验证集
     total_samples = len(dataset)
-    train_size = int(0.8 * total_samples)  # 80%用于训练
+    train_size = int(0.9 * total_samples)  # 80%用于训练
     val_size = total_samples - train_size   # 20%用于验证
     
     # # 创建随机索引分割（确保训练集和验证集都包含不同时间段的图片）
@@ -183,7 +183,7 @@ def train():
     ckpt_save_epoch = cfg.checkpoint_save_epoch
 
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=1e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=10, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=10)
     
     # 检查是否有预训练检查点
     start_epoch = 0
@@ -226,7 +226,7 @@ def train():
         total_loss = 0
         batch_count = 0
         for idx in range(0, train_size, batch_size):
-            batch_img = build_img_batch(train_dataset, idx, batch_size)
+            batch_img = build_img_batch(train_dataset, idx, batch_size).to(device_obj)
             try:
                 # VAE前向传播
                 encoded = model.encode(batch_img)
