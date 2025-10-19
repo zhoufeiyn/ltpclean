@@ -104,8 +104,6 @@ def save_model(model, epochs, final_loss, path=cfg.ckpt_path):
         print(f"❌ save model failed: {e}")
 
 
-
-
 def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
     """vae encode the images"""
     # 将图像编码到潜在空间: [batch_size, num_frames, 3, 128, 128] -> [batch_size, num_frames, 4, 32, 32]
@@ -157,9 +155,9 @@ def train():
     model = Algorithm(model_name, device_obj)
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
-    
+
     # 加载您自己训练的VAE权重
-    custom_vae_path = cfg.vae_model  
+    custom_vae_path = cfg.vae_model
     if custom_vae_path and os.path.exists(custom_vae_path):
         print(f"📥 load your own vae ckpt: {custom_vae_path}")
         custom_state_dict = torch.load(custom_vae_path, map_location=device_obj)
@@ -167,7 +165,7 @@ def train():
         print("✅ your vae ckpt loaded successfully！")
     else:
         print("ℹ️ use default pre-trained vae ckpt")
-    
+
     model.vae = vae
     # 加载预训练checkpoint
     checkpoint_path = os.path.join(cfg.ckpt_path, cfg.model_path)
@@ -223,7 +221,7 @@ def train():
     for epoch in range(epochs):
         total_loss = 0
         batch_count = 0
-        
+
         # 🔥 每个epoch开始时shuffle视频序列顺序
         shuffled_valid_starts = valid_starts.copy()
         random.shuffle(shuffled_valid_starts)
@@ -262,11 +260,11 @@ def train():
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
             # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
+            batch_data[0] = batch_data[0].repeat(40, 1, 1, 1, 1)
 
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(40, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(40, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
@@ -293,11 +291,10 @@ def train():
                 raise e
 
             # 查看batch里的loss和 gif
-            if batch_count % loss_log_iter ==0:
+            if batch_count % loss_log_iter == 0:
                 batch_loss = loss.item()
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
-
 
         # 一个epoch
         if batch_count > 0:
@@ -321,9 +318,10 @@ def train():
         if (epoch + 1) % gif_save_epoch == 0:
             # 确保output目录存在
 
-            model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
-
+            model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -331,8 +329,6 @@ def train():
             save_model(model, epoch + 1, current_loss, path=cfg.ckpt_path)
             checkpoint_message = f"💾 Checkpoint saved at epoch {epoch + 1}"
             logger.info(checkpoint_message)
-
-
 
     completion_message = "Training completed!"
     print(completion_message)
@@ -356,8 +352,10 @@ def train():
         logger.info(stats_message)
 
         # 训练完成后进行测试
-        model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions1, model, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions2, model, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
