@@ -150,7 +150,7 @@ if __name__ =="__main__":
     args = arg()
     sample_step = args.sample_step
     model = Algorithm(model_name,device)
-    vae = SDVAE()
+    vae = SDVAE().to(device)
     custom_vae_path = vae_model
     if custom_vae_path and os.path.exists(custom_vae_path):
         print(f"📥 load your own vae ckpt: {custom_vae_path}")
