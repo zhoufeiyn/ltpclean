@@ -5,7 +5,7 @@
 使用说明:
 1. 正常训练: 在 config/configTrain.py 中设置 resume_training = False
    - 会加载预训练模型 (cfg.model_path)
-   
+
 2. 继续训练: 在 config/configTrain.py 中设置:
    - resume_training = True
    - resume_checkpoint_path = "ckpt/model_epoch100_20251018_19.pth"  # 指定要加载的checkpoint路径
@@ -18,7 +18,7 @@
 
 保存的模型包含:
 - 模型权重 (network_state_dict)
-- 优化器状态 (optimizer_state_dict) 
+- 优化器状态 (optimizer_state_dict)
 - 训练信息 (epochs, loss, model_name等)
 
 自动保存:
@@ -136,38 +136,36 @@ def load_model(model, optimizer, checkpoint_path, device_obj):
     if not os.path.exists(checkpoint_path):
         print(f"⚠️ Checkpoint not found: {checkpoint_path}")
         return 0, float('inf')
-    
+
     try:
         print(f"📥 Loading checkpoint: {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path, map_location=device_obj, weights_only=False)
-        
+
         # 加载模型权重
         model.load_state_dict(checkpoint['network_state_dict'], strict=False)
         print("✅ Model weights loaded successfully!")
-        
+
         # 加载优化器状态
         if 'optimizer_state_dict' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             print("✅ Optimizer state loaded successfully!")
         else:
             print("⚠️ No optimizer state found in checkpoint")
-        
+
         # 获取训练信息
         start_epoch = checkpoint.get('epochs', 0)
         best_loss = checkpoint.get('loss', float('inf'))
-        
+
         print(f"📊 Loaded checkpoint info:")
         print(f"   - Epoch: {start_epoch}")
         print(f"   - Loss: {best_loss:.6f}")
         print(f"   - Model: {checkpoint.get('model_name', 'Unknown')}")
-        
+
         return start_epoch, best_loss
-        
+
     except Exception as e:
         print(f"❌ Failed to load checkpoint: {e}")
         return 0, float('inf')
-
-
 
 
 def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
@@ -224,11 +222,11 @@ def train():
 
     # 初始化优化器
     opt = diffusion_model.configure_optimizers_gpt()
-    
+
     # 初始化训练状态
     start_epoch = 0
     best_loss = float('inf')
-    
+
     # 检查是否需要继续训练 - 优先加载继续训练的checkpoint
     if cfg.resume_training and cfg.resume_checkpoint_path:
         print(f"🔄 Resuming training from checkpoint: {cfg.resume_checkpoint_path}")
@@ -245,7 +243,8 @@ def train():
                 model.load_state_dict(state_dict['network_state_dict'], strict=False)
                 print("✅ diffusion forcing Pretrained checkpoint loaded successfully!")
             else:
-                print(f"⚠️ diffusion forcing pretrained checkpoint not found: {checkpoint_path}, using random initialized model")
+                print(
+                    f"⚠️ diffusion forcing pretrained checkpoint not found: {checkpoint_path}, using random initialized model")
     else:
         # 没有设置继续训练，加载预训练模型
         checkpoint_path = os.path.join(cfg.ckpt_path, cfg.model_path)
@@ -255,14 +254,15 @@ def train():
             model.load_state_dict(state_dict['network_state_dict'], strict=False)
             print("✅ diffusion forcing pretrained checkpoint loaded successfully!")
         else:
-            print(f"⚠️ diffusion forcing pretrained checkpoint not found: {checkpoint_path}, using random initialized model")
+            print(
+                f"⚠️ diffusion forcing pretrained checkpoint not found: {checkpoint_path}, using random initialized model")
         print("🆕 Starting fresh training")
 
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
-    
+
     # 加载您自己训练的VAE权重
-    custom_vae_path = cfg.vae_model  
+    custom_vae_path = cfg.vae_model
     if custom_vae_path and os.path.exists(custom_vae_path):
         print(f"📥 load your own vae ckpt: {custom_vae_path}")
         custom_state_dict = torch.load(custom_vae_path, map_location=device_obj)
@@ -307,7 +307,7 @@ def train():
     for epoch in range(start_epoch, epochs):
         total_loss = 0
         batch_count = 0
-        
+
         # 🔥 每个epoch开始时shuffle视频序列顺序
         shuffled_valid_starts = valid_starts.copy()
         random.shuffle(shuffled_valid_starts)
@@ -346,11 +346,11 @@ def train():
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
             # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
+            batch_data[0] = batch_data[0].repeat(128, 1, 1, 1, 1)
 
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(128, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(128, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
@@ -377,11 +377,10 @@ def train():
                 raise e
 
             # 查看batch里的loss和 gif
-            if batch_count % loss_log_iter ==0:
+            if batch_count % loss_log_iter == 0:
                 batch_loss = loss.item()
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
-
 
         # 一个epoch
         if batch_count > 0:
@@ -405,9 +404,10 @@ def train():
         if (epoch + 1) % gif_save_epoch == 0:
             # 确保output目录存在
 
-            model_test(cfg.test_img_path1, cfg.actions1, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r',epoch=epoch+1,output_dir='output')
-            model_test(cfg.test_img_path1, cfg.actions2, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj',epoch=epoch+1,output_dir='output')
-
+            model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+            # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -415,8 +415,6 @@ def train():
             save_model(model, opt, epoch + 1, current_loss, path=cfg.ckpt_path)
             checkpoint_message = f"💾 Checkpoint saved at epoch {epoch + 1}"
             logger.info(checkpoint_message)
-
-
 
     completion_message = "Training completed!"
     print(completion_message)
@@ -440,8 +438,10 @@ def train():
         logger.info(stats_message)
 
         # 训练完成后进行测试
-        model_test(cfg.test_img_path1, cfg.actions1, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r',epoch='result',output_dir='output')
-        model_test(cfg.test_img_path1, cfg.actions2, model,vae, device_obj, cfg.sample_step, f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj',epoch='result',output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
+        # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
