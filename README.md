@@ -4,7 +4,7 @@
 
 </div>
 
-# VAE + Diffusion DiT Model
+
 
 ![Model Structure](./statics/structure.png)
 
