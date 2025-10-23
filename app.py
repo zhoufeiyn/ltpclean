@@ -8,7 +8,7 @@ from threading import Thread, Event
 import torch
 import time
 from config.configTrain import *
-from utils.utils import read_model, get_data, init_simulator, get_web_img
+from cleanedltp.utils import read_model, get_data, init_simulator, get_web_img
 
 """Model info"""
 frame_rate = 1/20

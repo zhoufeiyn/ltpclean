@@ -13,7 +13,7 @@ import cv2
 def read_model(model_name, model_path, action_space, device='cpu'):
     model = Algorithm(model_name,device)
     state_dict = torch.load(
-        osp.join("../ckpt", model_path),
+        osp.join("ckpt", model_path),
         map_location=torch.device(device),weights_only=False
     )
     model.load_state_dict(state_dict['network_state_dict'],strict=False)
@@ -84,7 +84,7 @@ def get_web_img(img):
 
 
 
-# np_data = utils.read_file(file_path, data_type)
+# np_data = dataloader.read_file(file_path, data_type)
 
 def get_data(if_random=False):
     start_time = time.time()
@@ -112,9 +112,9 @@ def get_data(if_random=False):
         keys = [key]
     else:
         keys = key
-    
+
     action = 0
-    
+
     # 遍历所有按下的键，累加动作值
     for k in keys:
         if k == "r" or k == "right" or k == "→":
@@ -133,7 +133,7 @@ def get_data(if_random=False):
             action += 2  # down
         elif k == "enter":
             action += 1  # select
-    
+
     return action
 
 

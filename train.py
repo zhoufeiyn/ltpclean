@@ -36,7 +36,7 @@ from infer_test import model_test
 import logging
 import random
 # 导入数据加载模块
-from utils.dataLoad import MarioDataset, build_video_sequence_batch
+from dataloader.dataLoad import MarioDataset, build_video_sequence_batch
 
 device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
