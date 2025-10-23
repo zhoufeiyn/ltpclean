@@ -141,14 +141,14 @@ class DiffusionForcingBase(nn.Module):
         if self.context_frames % self.frame_stack != 0:
             raise ValueError("Number of context frames must be divisible by frame stack size")
 
-        nonterminals = batch[-1]
+        nonterminals = batch[-1] # (batch_size, n_frames)
         nonterminals = nonterminals.bool().permute(1, 0)
         masks = torch.cumprod(nonterminals, dim=0).contiguous()
         n_frames = n_frames // self.frame_stack
         # Todo: modify conditions to fit action, current condition drop the first action
         if self.external_cond_dim:
             conditions = batch[1]
-            conditions = torch.cat([torch.zeros_like(conditions[:, :1])+45, conditions[:, 0:-1]], 1)
+            # conditions = torch.cat([torch.zeros_like(conditions[:, :1])+0, conditions[:, 0:-1]], 1)
             conditions = rearrange(conditions, "b (t fs) d -> t b (fs d)", fs=self.frame_stack).contiguous()
         else:
             conditions = [None for _ in range(n_frames)]
@@ -174,6 +174,11 @@ class DiffusionForcingBase(nn.Module):
     def training_step(self, batch):
         # training step for dynamics
         xs, conditions, masks, *_, init_z = self._preprocess_batch(batch)
+        #xs: (n_frames, batch_size, frame_stack*channels, height, width)
+        #conditions: (n_frames, batch_size, frame_stack*dim)
+        #masks: (n_frames, batch_size)
+        #init_z: (batch_size, *z_shape)
+
 
         n_frames, batch_size, _, *_ = xs.shape
 
@@ -187,7 +192,7 @@ class DiffusionForcingBase(nn.Module):
         for t in range(0, n_frames):
             deterministic_t = None
             if random() <= self.gt_cond_prob or (t == 0 and random() <= self.gt_first_frame):
-                deterministic_t = 0
+                deterministic_t = 0 # gt_cond_prob，gt_first_frame is 0, this couldn't be reached
 
             z_next, x_next_pred, l, cum_snr, o_l = self.transition_model(
                 z, xs[t], conditions[t], deterministic_t=deterministic_t, cum_snr=cum_snr

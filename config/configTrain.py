@@ -21,7 +21,7 @@ ckpt_path: str = "./ckpt"
 img_size = 256
 img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
-num_actions: int = 46
+num_actions: int = 32
 # # Large dataset train
 # num_frames: int = 8
 # frame_interval: int = 2
