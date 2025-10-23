@@ -69,7 +69,7 @@ class ConfigDF():
         self.sequence_len = 48
         
         # 固定参数
-        self.world_model_action_num = 32
+        self.world_model_action_num = 46
         self.player_num = 1
         
         # 根据模型标志应用特定覆盖

@@ -1,7 +1,7 @@
 """User Model Global Config"""
 model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 action_space = 7
-model_path = "model_epoch8000_20251015_06.pth" #"model.pth"
+model_path = "model_epoch10000_20251012_07.pth" #"model.pth"
 device = 'cuda:0'
 vae_model = 'ckpt/vae_epoch50_20251019_06.pth'
 
@@ -21,7 +21,7 @@ ckpt_path: str = "./ckpt"
 img_size = 256
 img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
-num_actions: int = 32
+
 # # Large dataset train
 # num_frames: int = 8
 # frame_interval: int = 2

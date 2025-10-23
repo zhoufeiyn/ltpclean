@@ -74,7 +74,7 @@ def get_web_img(img):
     img_3ch = (img_3ch*255.0).astype(np.uint8)
     return img_3ch
 
-def model_test(img_path='eval_data/demo1.png', actions=['r'], model=None,vae=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
+def model_test(img_path='eval_data/demo2.png', actions=['r'], model=None,vae=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
     """测试训练好的模型"""
     
     # 检查输入参数
