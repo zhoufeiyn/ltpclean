@@ -401,11 +401,11 @@ def train():
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
             # 扩展batch_size: [1, num_frames, channels, h, w] -> [16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
+            batch_data[0] = batch_data[0].repeat(156, 1, 1, 1, 1)
 
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(156, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(156, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
