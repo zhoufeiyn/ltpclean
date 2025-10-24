@@ -27,11 +27,26 @@ class MarioDataset(Dataset):
         self.nonterminals = []
         self._load_data()
         self.transform = transforms.Compose([
-            transforms.Resize(256, interpolation=InterpolationMode.NEAREST),
-            transforms.Pad((0, 16, 0, 16), fill=(107, 140, 255)),  # 上下各加16像素天空蓝
-            transforms.ToTensor(),
-            transforms.Normalize(0.5, 0.5)
-        ])
+                # 按宽度等比例缩放，保持比例不变形
+                transforms.Lambda(
+                    lambda img: transforms.functional.resize(
+                        img,
+                        size=(int(img.height * (256 / img.width)), 256),  # → 256×192
+                        interpolation=InterpolationMode.NEAREST
+                    )
+                ),
+                # 居中补上下边，使高宽都为256
+                transforms.Lambda(
+                    lambda img: transforms.functional.pad(
+                        img,
+                        padding=(0, (256 - img.height) // 2, 0, 256 - img.height - (256 - img.height) // 2),
+                        fill=(107, 140, 255)
+                    )
+                ),
+                # 转Tensor并归一化到[-1,1]
+                transforms.ToTensor(),
+                transforms.Normalize([0.5], [0.5])
+            ])
         
     def _load_data(self):
         """load all png files and corresponding actions - optimized for large datasets"""
