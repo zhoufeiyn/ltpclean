@@ -325,6 +325,7 @@ def train():
             batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(dataset, current_start_indices, num_frames)
             
             # 🔧 修复：将所有nonterminals设置为True，避免游戏过早结束
+
             for i in range(len(batch_nonterminals)):
                 batch_nonterminals[i] = torch.ones_like(batch_nonterminals[i])
 
