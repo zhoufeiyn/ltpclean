@@ -1,3 +1,5 @@
+from torchvision.transforms import InterpolationMode
+
 from models.vae.sdvae import SDVAE
 import os
 import numpy as np
@@ -8,8 +10,7 @@ import config.configTrain as cfg
 def get_img_data(img_path):
     img = Image.open(img_path).convert('RGB')
     transform = transforms.Compose([
-        # transforms.Resize((image_size, image_size)),
-        transforms.Resize((256, 256)),
+        transforms.Resize((256, 256),interpolation=InterpolationMode.NEAREST),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
     ])
