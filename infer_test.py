@@ -6,6 +6,8 @@ import torch
 import torchvision.transforms as transforms
 import numpy as np
 import imageio
+from torchvision.transforms import InterpolationMode
+
 from algorithm import Algorithm
 from config.configTrain import *
 from models.vae.sdvae import SDVAE
@@ -44,11 +46,11 @@ def image_to_numpy_array(filepath):
 def get_img_data(img_path):
     img = Image.open(img_path).convert('RGB')
     transform = transforms.Compose([
-        # transforms.Resize((image_size, image_size)),
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
-    ])
+            transforms.Resize(256, interpolation=InterpolationMode.NEAREST),
+            transforms.Pad((0, 16, 0, 16), fill=(107, 140, 255)),  # 上下各加16像素天空蓝
+            transforms.ToTensor(),
+            transforms.Normalize(0.5, 0.5)
+        ])
     img = transform(img)
     img = img.unsqueeze(0)
     return img
