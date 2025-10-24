@@ -11,17 +11,17 @@ from config.configTrain import *
 from models.vae.sdvae import SDVAE
 def get_jave_7action(key):
     if key == "r":
-        action = 1
-    elif key == "rj":
         action = 2
-    elif key == "l":
-        action = 3
-    elif key == "lj":
-        action = 4
-    elif key == "j":
-        action = 5
-    elif key == "f":
+    elif key == "rj":
         action = 6
+    elif key == "l":
+        action = 1
+    elif key == "lj":
+        action = 5
+    elif key == "j":
+        action = 4
+    elif key == "f":
+        action = 8
     else:
         action = 0
     return [action]
