@@ -56,5 +56,5 @@ epochs: int = 3000          # 测试epoch数量
 sample_step: int = 20
 test_img_path1: str = "./eval_data/demo2.png"
 
-actions1 = ['r']
+actions1 = ['r','r','r']
 actions2 = ['rj','rj','rj','rj','rj','rj']
