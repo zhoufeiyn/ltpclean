@@ -218,7 +218,9 @@ def train():
     # 使用Algorithm类加载完整的预训练模型（包含VAE和Diffusion）
     model = Algorithm(model_name, device_obj)
     model = model.to(device_obj)
+    # diffusion_model = model.df_model
 
+    opt = model.df_model.configure_optimizers_gpt()
 
     # 初始化训练状态
     start_epoch = 0
@@ -257,9 +259,7 @@ def train():
 
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
-    diffusion_model = model.df_model
 
-    opt = diffusion_model.configure_optimizers_gpt()
     # 初始化优化器 - 使用简单的AdamW
     # opt = torch.optim.AdamW(diffusion_model.parameters(), lr=1e-4, weight_decay=1e-5)
     # 加载您自己训练的VAE权重
@@ -323,6 +323,10 @@ def train():
 
             # 批量构建视频序列
             batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(dataset, current_start_indices, num_frames)
+            
+            # 🔧 修复：将所有nonterminals设置为True，避免游戏过早结束
+            for i in range(len(batch_nonterminals)):
+                batch_nonterminals[i] = torch.ones_like(batch_nonterminals[i])
 
             # 如果batch不满，用最后一个视频复制补齐
             if current_batch_size < batch_size:
@@ -353,7 +357,7 @@ def train():
 
             # 训练步骤
             try:
-                out_dict = diffusion_model.training_step(batch_data)
+                out_dict = model.df_model.training_step(batch_data)
                 loss = out_dict["loss"]  # 用loss还是original_loss??
 
                 # 反向传播
