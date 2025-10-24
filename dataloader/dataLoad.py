@@ -10,8 +10,6 @@ from torchvision import transforms
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
 
-from torchvision.transforms import InterpolationMode
-
 
 class MarioDataset(Dataset):
     """load mario dataset __init__ action and img paths,
@@ -27,26 +25,10 @@ class MarioDataset(Dataset):
         self.nonterminals = []
         self._load_data()
         self.transform = transforms.Compose([
-                # 按宽度等比例缩放，保持比例不变形
-                transforms.Lambda(
-                    lambda img: transforms.functional.resize(
-                        img,
-                        size=(int(img.height * (256 / img.width)), 256),  # → 256×192
-                        interpolation=InterpolationMode.NEAREST
-                    )
-                ),
-                # 居中补上下边，使高宽都为256
-                transforms.Lambda(
-                    lambda img: transforms.functional.pad(
-                        img,
-                        padding=(0, (256 - img.height) // 2, 0, 256 - img.height - (256 - img.height) // 2),
-                        fill=(107, 140, 255)
-                    )
-                ),
-                # 转Tensor并归一化到[-1,1]
-                transforms.ToTensor(),
-                transforms.Normalize([0.5], [0.5])
-            ])
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(), # [0, 1]
+            transforms.Normalize(0.5, 0.5),  # [-1, 1]
+        ])
         
     def _load_data(self):
         """load all png files and corresponding actions - optimized for large datasets"""

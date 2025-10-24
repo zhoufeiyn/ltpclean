@@ -6,8 +6,6 @@ import torch
 import torchvision.transforms as transforms
 import numpy as np
 import imageio
-from torchvision.transforms import InterpolationMode
-
 from algorithm import Algorithm
 from config.configTrain import *
 from models.vae.sdvae import SDVAE
@@ -46,26 +44,11 @@ def image_to_numpy_array(filepath):
 def get_img_data(img_path):
     img = Image.open(img_path).convert('RGB')
     transform = transforms.Compose([
-                # 按宽度等比例缩放，保持比例不变形
-                transforms.Lambda(
-                    lambda img: transforms.functional.resize(
-                        img,
-                        size=(int(img.height * (256 / img.width)), 256),  # → 256×192
-                        interpolation=InterpolationMode.NEAREST
-                    )
-                ),
-                # 居中补上下边，使高宽都为256
-                transforms.Lambda(
-                    lambda img: transforms.functional.pad(
-                        img,
-                        padding=(0, (256 - img.height) // 2, 0, 256 - img.height - (256 - img.height) // 2),
-                        fill=(107, 140, 255)
-                    )
-                ),
-                # 转Tensor并归一化到[-1,1]
-                transforms.ToTensor(),
-                transforms.Normalize([0.5], [0.5])
-            ])
+        # transforms.Resize((image_size, image_size)),
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
+    ])
     img = transform(img)
     img = img.unsqueeze(0)
     return img
@@ -89,7 +72,6 @@ def get_web_img(img):
     img_3ch = np.transpose(img, (1,2,0)) # [h, w, c]
     img_3ch = np.clip(img_3ch*0.5+0.5, 0, 1)
     img_3ch = (img_3ch*255.0).astype(np.uint8)
-    img_3ch = img_3ch[32:-32, :, :]
     return img_3ch
 
 def model_test(img_path='eval_data/demo2.png', actions=['r'], model=None,vae=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
