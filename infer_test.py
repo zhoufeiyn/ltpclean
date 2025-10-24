@@ -89,6 +89,7 @@ def get_web_img(img):
     img_3ch = np.transpose(img, (1,2,0)) # [h, w, c]
     img_3ch = np.clip(img_3ch*0.5+0.5, 0, 1)
     img_3ch = (img_3ch*255.0).astype(np.uint8)
+    img_3ch = img_3ch[32:-32, :, :]
     return img_3ch
 
 def model_test(img_path='eval_data/demo2.png', actions=['r'], model=None,vae=None, device='cuda',sample_step =4,name='infer',epoch=None,output_dir='output'):
