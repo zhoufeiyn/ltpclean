@@ -220,8 +220,9 @@ def train():
     model = model.to(device_obj)
     diffusion_model = model.df_model
 
-    # 初始化优化器
-    opt = diffusion_model.configure_optimizers_gpt()
+    # opt = diffusion_model.configure_optimizers_gpt()
+    # 初始化优化器 - 使用简单的AdamW
+    opt = torch.optim.AdamW(diffusion_model.parameters(), lr=1e-4, weight_decay=1e-5)
 
     # 初始化训练状态
     start_epoch = 0
