@@ -27,10 +27,11 @@ class MarioDataset(Dataset):
         self.nonterminals = []
         self._load_data()
         self.transform = transforms.Compose([
-        transforms.Resize((256, 256),interpolation=InterpolationMode.NEAREST),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # [-1, 1]
-    ])
+            transforms.Resize((image_size, image_size),interpolation=InterpolationMode.NEAREST),
+            # transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(), # [0, 1]
+            transforms.Normalize(0.5, 0.5),  # [-1, 1]
+        ])
         
     def _load_data(self):
         """load all png files and corresponding actions - optimized for large datasets"""

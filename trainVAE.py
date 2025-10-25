@@ -1,3 +1,5 @@
+from torchvision.transforms import InterpolationMode
+
 from models.vae.sdvae import SDVAE
 import torch
 import config.configVAE as cfg
@@ -6,7 +8,7 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 
-from utils.dataLoad import MarioDataset
+from dataloader.dataLoad import MarioDataset
 from train import setup_logging, save_loss_curve
 
 def build_img_batch_from_indices(dataset, indices):
@@ -104,7 +106,7 @@ def vae_test(img_path, model, device_obj, e=None, out_dir='output/VAE' ):
     
     # 定义图像变换
     transform = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((256, 256),interpolation=InterpolationMode.NEAREST),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
