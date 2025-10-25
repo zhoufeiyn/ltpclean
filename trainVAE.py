@@ -296,7 +296,7 @@ def train():
         print(f"    batches per epoch: {batch_count}")
         logger.info(stats_message)
 
-        vae_test(cfg.test_img_path,model,device_obj,'result',cfg.out_dir)
+        vae_test(cfg.test_img_path,model,device_obj,9999,cfg.out_dir)
 
         if len(loss_history) > 0:
             final_loss_curve_path = save_loss_curve(loss_history, 1, save_path=cfg.out_dir)

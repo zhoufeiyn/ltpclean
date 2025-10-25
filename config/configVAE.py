@@ -19,7 +19,7 @@ loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
 
 img_save_epoch: int = 6  # avgloss和gif保存间隔 \output
 
-checkpoint_save_epoch: int = 30  # checkpoint保存间隔
+checkpoint_save_epoch: int = 6  # checkpoint保存间隔
 
 
 batch_size: int = 64
