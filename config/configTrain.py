@@ -43,8 +43,8 @@ base_ch: int = 64          # 减少基础通道数以适应GPU内存
 # actions2 = ['rj','rj','rj','rj','rj','rj']
 
 # small dataset train
-num_frames: int = 18
-frame_interval: int = 18
+num_frames: int = 6
+frame_interval: int = 6
 loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
 # gif_save_iter: int = 400
 gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
@@ -54,7 +54,7 @@ batch_size: int = 2        # 单张图像过拟合
 epochs: int = 10000          # 测试epoch数量
 
 sample_step: int = 20
-test_img_path1: str = "./eval_data/demo3.png"
+test_img_path1: str = "./eval_data/demo4.png"
 
-actions1 = ['r','r','r','r','r','r','r','r','r','r','r','r','r']
-actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj','rj','rj','rj','rj']
+actions1 = ['r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r']
+actions2 = ['rj','rj','rj','rj','rj','rj']
