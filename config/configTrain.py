@@ -7,7 +7,7 @@ vae_model = 'ckpt/VAE/vae_epoch10_20251025_06.pth'
 
 """Resume Training Config"""
 resume_training = True  # 是否继续训练
-resume_checkpoint_path = "ckpt/model_epoch3000_20251025_08.pth"  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
+resume_checkpoint_path = "ckpt/model_epoch8000_20251025_20.pth"  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
 
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
@@ -56,5 +56,5 @@ epochs: int = 10000          # 测试epoch数量
 sample_step: int = 20
 test_img_path1: str = "./eval_data/demo4.png"
 
-actions1 = ['r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r','r']
+actions1 = ['r','r','r','r','r','r']
 actions2 = ['rj','rj','rj','rj','rj','rj']
