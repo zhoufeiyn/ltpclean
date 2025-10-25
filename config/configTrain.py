@@ -51,10 +51,10 @@ gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
 checkpoint_save_epoch: int = 1000  # checkpoint保存间隔
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 batch_size: int = 2        # 单张图像过拟合
-epochs: int = 10000          # 测试epoch数量
+epochs: int = 15000          # 测试epoch数量
 
 sample_step: int = 20
-test_img_path1: str = "./eval_data/demo4.png"
-
+test_img_path1: str = "./eval_data/demo1.png"
+test_img_path2: str = "./eval_data/demo2.png"
 actions1 = ['r','r','r','r','r','r']
 actions2 = ['rj','rj','rj','rj','rj','rj']
