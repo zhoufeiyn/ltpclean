@@ -62,7 +62,7 @@ def init_simulator(model,vae, batch):
     latent = latent_dist.sample()
     decoded_obs = vae.decode(latent)
 
-    latent_for_df = latent * 0.18215
+    latent_for_df = latent * 0.1355
     latent_for_df = latent_for_df.reshape(4, 32, 32)
     init_z = model.df_model.init_df_model(latent_for_df)
     
@@ -105,7 +105,7 @@ def model_test(img_path='eval_data/demo2.png', actions=['r'], model=None,vae=Non
             with torch.no_grad():
                 a = torch.tensor([a],device=device).long()
                 zeta, obs = model.df_model.step(zeta, a.float(), sample_step)
-                obs = vae.decode(obs / 0.18215)
+                obs = vae.decode(obs / 0.1355)
             img_list.append(get_web_img(obs[0].cpu().numpy()))
             
         if not os.path.isdir(output_dir):

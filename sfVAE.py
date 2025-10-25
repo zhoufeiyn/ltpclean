@@ -195,7 +195,7 @@ def estimate_scaling_factor():
             batch_img = build_img_batch_from_indices(dataset, batch_indices).to(device_obj)
             
             # VAE前向传播
-            encoded = model.encode(batch_img).latent_dist.sample()
+            encoded = model.encode(batch_img).sample()
             std_list.append(encoded.std().item())
             
             if batch_idx % (batch_size * 10) == 0:

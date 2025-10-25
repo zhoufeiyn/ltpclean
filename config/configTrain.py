@@ -3,7 +3,7 @@ model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 action_space = 7
 model_path = "model_epoch10000_20251012_07.pth" #"model.pth"
 device = 'cuda:0'
-vae_model = 'ckpt/vae_epoch50_20251019_06.pth'
+vae_model = 'ckpt/vae_epoch10_20251025_06.pth'
 
 """Resume Training Config"""
 resume_training = False  # 是否继续训练
@@ -43,8 +43,8 @@ base_ch: int = 64          # 减少基础通道数以适应GPU内存
 # actions2 = ['rj','rj','rj','rj','rj','rj']
 
 # small dataset train
-num_frames: int = 12
-frame_interval: int = 12
+num_frames: int = 18
+frame_interval: int = 18
 loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
 # gif_save_iter: int = 400
 gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
@@ -56,5 +56,5 @@ epochs: int = 5000          # 测试epoch数量
 sample_step: int = 20
 test_img_path1: str = "./eval_data/demo3.png"
 
-actions1 = ['r','r','r','r','r','r','r','r','r']
-actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj']
+actions1 = ['r','r','r','r','r','r','r','r','r','r','r','r','r']
+actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj','rj','rj','rj','rj']

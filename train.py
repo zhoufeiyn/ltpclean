@@ -168,7 +168,7 @@ def load_model(model, optimizer, checkpoint_path, device_obj):
         return 0, float('inf')
 
 
-def vae_encode(batch_data_images, vae_model, device, scale_factor=0.18215):
+def vae_encode(batch_data_images, vae_model, device, scale_factor=0.1355):
     """vae encode the images"""
     # 将图像编码到潜在空间: [batch_size, num_frames, 3, 128, 128] -> [batch_size, num_frames, 4, 32, 32]
     with torch.no_grad():
