@@ -2,7 +2,7 @@
 """sd 1.5 512*512 VAE"""
 
 out_dir: str = "./output/VAE"
-data_path: str = "./datatrain"
+data_path: str = "./mario_data"
 ckpt_path: str = "./ckpt/VAE"
 model_path: str = ""
 

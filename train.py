@@ -350,11 +350,11 @@ def train():
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
             # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(156, 1, 1, 1, 1)
+            batch_data[0] = batch_data[0].repeat(32, 1, 1, 1, 1)
 
             # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(156, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(156, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            batch_data[1] = batch_data[1].repeat(32, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            batch_data[2] = batch_data[2].repeat(32, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
@@ -410,8 +410,8 @@ def train():
 
             model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
-            # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-            #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -444,8 +444,8 @@ def train():
         # 训练完成后进行测试
         model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
                    f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
-        # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-        #            f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
+        model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
