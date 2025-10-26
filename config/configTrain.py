@@ -22,13 +22,13 @@ base_ch: int = 64          # 减少基础通道数以适应GPU内存
 
 # Large dataset train
 num_frames: int = 12
-frame_interval: int = 3
-loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
+frame_interval: int = 4
+loss_log_iter: int = 5  # loss数据print和保存至log日志的间隔 \log
 # gif_save_iter: int = 400
 gif_save_epoch: int = 1  # avgloss和gif保存间隔 \output
 checkpoint_save_epoch: int = 1  # checkpoint保存间隔
 min_improvement: float = 0.15  # 最小改善幅度（15%）
-batch_size: int = 24        # 单张图像过拟合
+batch_size: int = 24       
 epochs: int = 1          # 测试epoch数量
 
 sample_step: int = 20

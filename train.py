@@ -390,8 +390,9 @@ def train():
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
 
-        # 一个epoch
-        if batch_count > 0 and (epoch + 1) % 5 == 0:
+        # # 一个epoch
+        # if batch_count > 0 and (epoch + 1) % 5 == 0:
+        if batch_count > 0:
             avg_loss = total_loss / batch_count
             # scheduler.step(avg_loss)
             final_avg_loss = avg_loss  # 更新最终的avg_loss
