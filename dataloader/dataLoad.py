@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
-
+from config.configTrain import train_sample
 from torchvision.transforms import InterpolationMode
 
 
@@ -59,8 +59,7 @@ class MarioDataset(Dataset):
                 files, actions, nonterminals = future.result()
                 self.image_files.extend(files)
                 self.actions.extend(actions)
-                self.nonterminals.extend(nonterminals)
-        
+                self.nonterminals.extend(nonterminals)        
         print(f"✅ Loaded {len(self.image_files)} valid images from {len(subdirs)} levels")
     
     @staticmethod
@@ -68,17 +67,41 @@ class MarioDataset(Dataset):
         """扫描单个目录，返回文件路径和动作，按帧号排序"""
         file_data = []  # 存储(file_path, action, nonterminal, frame_num)的列表
         
+        # 首先收集所有文件并按帧号排序
+        all_files = []
         for file in os.listdir(directory):
             if file.lower().endswith('.png'):
                 file_path = os.path.join(directory, file)
                 action, nonterminal = MarioDataset._extract_action_nonterminal_from_filename_static(file)
                 frame_num = MarioDataset._extract_frame_number_from_filename_static(file)
-                
                 if action is not None and frame_num is not None:
-                    file_data.append((file_path, action, nonterminal, frame_num))
+                    all_files.append((file_path, action, nonterminal, frame_num))
         
         # 按帧号排序
-        file_data.sort(key=lambda x: x[3])
+        all_files.sort(key=lambda x: x[3])
+        
+        # 按顺序进行跳帧处理（基于实际帧号差值）
+        # 逻辑：只保留与上一个添加帧的差值 > train_sample 的帧
+        # - nt=0（结束帧）总是添加
+        # - nt=1时，如果当前帧与上个已添加帧的帧号差值 > train_sample，才添加
+        # 这样自然跳过密集帧，保留稀疏帧
+        last_added_frame_num = None  # 记录上一个添加的帧号
+        
+        for file_path, action, nonterminal, frame_num in all_files:
+            # nt=0（游戏结束帧）总是添加
+            if not nonterminal:
+                file_data.append((file_path, action, nonterminal, frame_num))
+                last_added_frame_num = frame_num
+            # nt=1（游戏进行中）
+            elif last_added_frame_num is None:
+                # 第一帧，直接添加
+                file_data.append((file_path, action, nonterminal, frame_num))
+                last_added_frame_num = frame_num
+            elif frame_num - last_added_frame_num > train_sample:
+                # 帧号差值>train_sample，添加
+                file_data.append((file_path, action, nonterminal, frame_num))
+                last_added_frame_num = frame_num
+            # 否则跳过（帧号差值<=train_sample且nt=1）
         
         # 将最后一帧的nonterminal设置为False（游戏结束）
         if file_data:
@@ -105,7 +128,7 @@ class MarioDataset(Dataset):
     def _extract_action_nonterminal_from_filename_static(filename: str) -> Optional[int]:
         """静态方法版本的动作提取函数"""
         pattern1 = r'_a(\d+)_'
-        pattern2 = r'_nt(\d+)_'  # 修改：匹配nt后面数字然后是点号
+        pattern2 = r'_nt(\d+)'  # 匹配nt后面的数字（后面可能是下划线或点号）
         match1 = re.search(pattern1, filename)
         match2 = re.search(pattern2, filename)
         if match1:
@@ -116,11 +139,10 @@ class MarioDataset(Dataset):
         
         if match2:
             nonterminal = int(match2.group(1))  # 修改：group(1)而不是group(2)
-            nonterminal = nonterminal== 1
-
+            nonterminal = nonterminal == 1
         else:
             nonterminal = False
-        return action_mapped,nonterminal
+        return action_mapped, nonterminal
 
     # @staticmethod
     # def _map_action_to_playgenaction_static(action: int) -> int:

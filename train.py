@@ -204,6 +204,10 @@ def train():
     device_obj = torch.device(device)
     # 使用多进程数据加载优化
     dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
+    
+    # 打印数据集信息（包括跳帧效果）
+    logger.info(f"📊 Dataset loaded: {len(dataset)} samples")
+    logger.info(f"📊 Frame sampling threshold (train_sample): {cfg.train_sample}")
 
     # video sequence parameters
     num_frames = cfg.num_frames
@@ -324,10 +328,10 @@ def train():
             # 批量构建视频序列
             batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(dataset, current_start_indices, num_frames)
             
-            # 🔧 修复：将所有nonterminals设置为True，避免游戏过早结束
+            # # 🔧 修复：将所有nonterminals设置为True，避免游戏过早结束
 
-            for i in range(len(batch_nonterminals)):
-                batch_nonterminals[i] = torch.ones_like(batch_nonterminals[i])
+            # for i in range(len(batch_nonterminals)):
+            #     batch_nonterminals[i] = torch.ones_like(batch_nonterminals[i])
 
             # 如果batch不满，用最后一个视频复制补齐
             if current_batch_size < batch_size:
@@ -349,12 +353,12 @@ def train():
 
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
 
-            # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-            batch_data[0] = batch_data[0].repeat(64, 1, 1, 1, 1)
+            # # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
+            # batch_data[0] = batch_data[0].repeat(64, 1, 1, 1, 1)
 
-            # 同步扩展actions和nonterminals
-            batch_data[1] = batch_data[1].repeat(64, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-            batch_data[2] = batch_data[2].repeat(64, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
+            # # 同步扩展actions和nonterminals
+            # batch_data[1] = batch_data[1].repeat(64, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
+            # batch_data[2] = batch_data[2].repeat(64, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
 
             # 训练步骤
             try:
@@ -413,9 +417,13 @@ def train():
             model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -451,9 +459,13 @@ def train():
         model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                    f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
         model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
+                   f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
         model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
+                   f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
+        model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir='output')
+        model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:

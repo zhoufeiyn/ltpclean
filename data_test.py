@@ -20,10 +20,10 @@ def train():
     dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
 
     # video sequence parameters
-    num_frames = 8
-    frame_interval = 8
+    num_frames = 13
+    frame_interval = 13
 
-    epochs, batch_size = 1, 1
+    epochs, batch_size = 1, 2
 
 
     print("---2. load dataset---")
@@ -57,6 +57,7 @@ def train():
 
             # 获取当前batch的起始索引
             current_start_indices = valid_starts[batch_start:batch_end]
+
 
             # 批量构建视频序列
             batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(
