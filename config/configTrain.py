@@ -3,7 +3,7 @@ model_name = 'df_z32_c1_dit_n11_mario_km_tanh_ldm'
 train_sample = 1
 model_path = "model_epoch10000_20251012_07.pth" #"model.pth"
 device = 'cuda:0'
-vae_model = 'ckpt/VAE/vae_epoch10_20251025_06.pth'
+vae_model = '/content/drive/MyDrive/my_models/1025sdxl/vae_epoch10_20251025_06.pth'
 
 """Resume Training Config"""
 resume_training = False  # 是否继续训练
@@ -11,10 +11,8 @@ resume_checkpoint_path = "ckpt/model_epoch8000_20251025_20.pth"  # 继续训练�
 
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
-data_type='java'
-SEQ_LEN = 100
 out_dir: str = "./output"
-data_path: str = "./datatrain"
+data_path: str = "/content/drive/MyDrive/datatrain/"
 ckpt_path: str = "./ckpt"
 
 """Train Config"""
