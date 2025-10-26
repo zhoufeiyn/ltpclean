@@ -21,7 +21,7 @@ class MarioDataset(Dataset):
     # def __init__(self, data_path: str, image_size, num_workers=4, train_sample=1,num_frames=12):
     def __init__(self, cfg):
         self.data_path = cfg.data_path
-        self.image_size = cfg.image_size
+        self.image_size = cfg.img_size
         self.num_workers_folders = cfg.num_workers_folders
         self.train_sample = cfg.train_sample
         self.num_frames = cfg.num_frames
@@ -29,6 +29,7 @@ class MarioDataset(Dataset):
         self.actions = [] # action (0-255)
         self.nonterminals = []
         self._load_data()
+        image_size = cfg.img_size
         self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size),interpolation=InterpolationMode.NEAREST),
             # transforms.Resize((image_size, image_size)),
@@ -55,7 +56,7 @@ class MarioDataset(Dataset):
         print(f"Found {len(subdirs)} subdirectories to scan")
         
         # 并行处理每个子目录，每个子目录内已按帧号排序
-        with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
+        with ProcessPoolExecutor(max_workers=self.num_workers_folders) as executor:
             futures = [executor.submit(MarioDataset._scan_directory, subdir,self.train_sample) for subdir in subdirs]
             
             for future in futures:
@@ -191,8 +192,11 @@ class MarioDataset(Dataset):
         """get the data sample of the specified index - optimized for large datasets"""
         if idx >= len(self.image_files):
             raise IndexError(f"Index {idx} out of range for dataset of size {len(self.image_files)}")
-        
-        start_idx = idx
+
+        if idx + self.num_frames >= len(self.image_files):
+            start_idx = len(self.image_files) - self.num_frames
+        else:
+            start_idx = idx
         end_idx = start_idx + self.num_frames
 
         # 构建单个视频序列
