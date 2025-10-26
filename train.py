@@ -34,9 +34,8 @@ import os
 from datetime import datetime
 from infer_test import model_test
 import logging
-import random
 # 导入数据加载模块
-from dataloader.dataLoad import MarioDataset, build_video_sequence_batch
+from dataloader.dataLoad import MarioDataset
 from torch.utils.data import DataLoader
 
 device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -205,7 +204,7 @@ def train():
     device_obj = torch.device(device)
     # 使用多进程数据加载优化
     dataset = MarioDataset(cfg)
-    dataloder = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=4)
+    dataloder = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
 
     # 打印数据集信息（包括跳帧效果）
     logger.info(f"📊 Dataset loaded: {len(dataset)} samples")
@@ -213,7 +212,6 @@ def train():
 
     # video sequence parameters
     num_frames = cfg.num_frames
-    frame_interval = cfg.frame_interval
     model_name = cfg.model_name
 
     loss_log_iter = cfg.loss_log_iter
@@ -266,8 +264,7 @@ def train():
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
 
-    # 初始化优化器 - 使用简单的AdamW
-    # opt = torch.optim.AdamW(diffusion_model.parameters(), lr=1e-4, weight_decay=1e-5)
+
     # 加载您自己训练的VAE权重
     custom_vae_path = cfg.vae_model
     if custom_vae_path and os.path.exists(custom_vae_path):
@@ -289,27 +286,22 @@ def train():
 
     print("---1. start training----")
     print("---2. load dataset---")
-    total_samples = len(dataset)
+    total_video_sequences = len(dataset)  # dataset 已经返回有效序列数量
     # 检查是否有足够的数据
-    if total_samples < num_frames:
-        print(f"❌ dataset not enough: need at least {num_frames} samples, but only {total_samples} samples")
+    if total_video_sequences < 1:
+        print(f"❌ dataset not enough: no valid video sequences")
         return
-    # 计算可以创建多少个完整的视频序列
-    num_videos = (total_samples - num_frames) // frame_interval + 1
-    print(f"dataset loaded: {total_samples} samples, construct {num_videos} complete video sequences, "
-          f"each video has {num_frames} frames, construct {(num_videos + batch_size - 1) // batch_size} batches, the batch size is {batch_size}")
+    
+    num_batches = (total_video_sequences + batch_size - 1) // batch_size
+    print(f"📊 Dataset info:")
+    print(f"   - valid video sequences: {total_video_sequences}")
+    print(f"   - each video has {num_frames} frames")
+    print(f"   - batch size: {batch_size}")
+    print(f"   - batches per epoch: {num_batches}")
 
     # 初始化损失历史记录
     loss_history = []
     final_avg_loss = 0  # 用于保存最终的avg_loss
-
-    # 预计算所有有效的视频序列起始位置,间隔一个frame_interval取一个video sequence, 最终剩下不足一个video的扔掉
-    valid_starts = []
-    for start in range(0, total_samples - num_frames + 1, frame_interval):
-        valid_starts.append(start)
-
-    # 按batch_size分组处理
-    num_valid_videos = len(valid_starts)
 
     for epoch in range(start_epoch, epochs):
         total_loss = 0
@@ -335,8 +327,6 @@ def train():
                 total_loss += loss.item()
                 batch_count += 1
 
-                # if batch_count % 1 == 0:
-                #     print(f"   Batch {batch_count}, Loss: {loss.item():.6f}") # print loss in every 1 batch
 
             except Exception as e:
                 print(f"   ❌ error in training step: {e}")
@@ -353,85 +343,8 @@ def train():
                 logger.info(loss_message)
 
 
-        #
-        # # 🔥 每个epoch开始时shuffle视频序列顺序
-        # shuffled_valid_starts = valid_starts.copy()
-        # random.shuffle(shuffled_valid_starts)
-        #
-        # # 按batch处理 - 优化版本
-        # for batch_start in range(0, num_valid_videos, batch_size):
-        #     batch_end = min(batch_start + batch_size, num_valid_videos)
-        #     current_batch_size = batch_end - batch_start
-        #
-        #     # 获取当前batch的起始索引（现在是shuffled的）
-        #     current_start_indices = shuffled_valid_starts[batch_start:batch_end]
-        #
-        #     # 批量构建视频序列
-        #     batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(dataset, current_start_indices, num_frames)
-        #
-        #     # # 🔧 修复：将所有nonterminals设置为True，避免游戏过早结束
-        #
-        #     # for i in range(len(batch_nonterminals)):
-        #     #     batch_nonterminals[i] = torch.ones_like(batch_nonterminals[i])
-        #
-        #     # 如果batch不满，用最后一个视频复制补齐
-        #     if current_batch_size < batch_size:
-        #         last_video_images = batch_images[-1]
-        #         last_video_actions = batch_actions[-1]
-        #         last_video_nonterminals = batch_nonterminals[-1]
-        #
-        #         for _ in range(batch_size - current_batch_size):
-        #             batch_images.append(last_video_images)
-        #             batch_actions.append(last_video_actions)
-        #             batch_nonterminals.append(last_video_nonterminals)
-        #
-        #     # 拼接成batch_tensor
-        #     batch_data = [
-        #         torch.cat(batch_images, dim=0).to(device_obj),
-        #         torch.cat(batch_actions, dim=0).to(device_obj),
-        #         torch.cat(batch_nonterminals, dim=0).to(device_obj)
-        #     ]
-        #
-        #     batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
-        #
-        #     # # # for small dataset 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
-        #     # batch_data[0] = batch_data[0].repeat(64, 1, 1, 1, 1)
-        #
-        #     # # 同步扩展actions和nonterminals
-        #     # batch_data[1] = batch_data[1].repeat(64, 1, 1)  # actions: [1, num_frames, 1] -> [16, num_frames, 1]
-        #     # batch_data[2] = batch_data[2].repeat(64, 1)  # nonterminals: [1, num_frames] -> [16, num_frames]
-        #
-        #     # 训练步骤
-        #     try:
-        #         out_dict = model.df_model.training_step(batch_data)
-        #         loss = out_dict["loss"]  # 用loss还是original_loss??
-        #
-        #         # 反向传播
-        #         opt.zero_grad()
-        #         loss.backward()
-        #         opt.step()
-        #
-        #         total_loss += loss.item()
-        #         batch_count += 1
-        #
-        #         # if batch_count % 1 == 0:
-        #         #     print(f"   Batch {batch_count}, Loss: {loss.item():.6f}") # print loss in every 1 batch
-        #
-        #     except Exception as e:
-        #         print(f"   ❌ error in training step: {e}")
-        #         print(f"   batch_data shapes:")
-        #         print(f"     images: {batch_data[0].shape}")
-        #         print(f"     actions: {batch_data[1].shape}")
-        #         print(f"     nonterminals: {batch_data[2].shape}")
-        #         raise e
-        #
-        #     # 查看batch里的loss和 gif
-        #     if batch_count % loss_log_iter == 0:
-        #         batch_loss = loss.item()
-        #         loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
-        #         logger.info(loss_message)
 
-        # # 一个epoch
+        # # 5个epoch
         # if batch_count > 0 and (epoch + 1) % 5 == 0:
         if batch_count > 0:
             avg_loss = total_loss / batch_count

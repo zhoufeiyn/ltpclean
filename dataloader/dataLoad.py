@@ -25,6 +25,7 @@ class MarioDataset(Dataset):
         self.num_workers_folders = cfg.num_workers_folders
         self.train_sample = cfg.train_sample
         self.num_frames = cfg.num_frames
+        self.frame_interval = cfg.frame_interval  # 添加 frame_interval 参数
         self.image_files = [] # image files path (xxx.png)
         self.actions = [] # action (0-255)
         self.nonterminals = []
@@ -36,6 +37,14 @@ class MarioDataset(Dataset):
             transforms.ToTensor(), # [0, 1]
             transforms.Normalize(0.5, 0.5),  # [-1, 1]
         ])
+        
+        # 预计算有效的视频序列起始位置（间隔 frame_interval）
+        self.valid_starts = []
+        total_samples = len(self.image_files)
+        for start in range(0, total_samples - self.num_frames + 1, self.frame_interval):
+            self.valid_starts.append(start)
+        
+        print(f"📊 valid video sequences: {len(self.valid_starts)} (interval {self.frame_interval} samples)")
         
     def _load_data(self):
         """load all png files and corresponding actions - optimized for large datasets"""
@@ -63,7 +72,7 @@ class MarioDataset(Dataset):
                 files, actions, nonterminals = future.result()
                 self.image_files.extend(files)
                 self.actions.extend(actions)
-                self.nonterminals.extend(nonterminals)        
+                self.nonterminals.extend(nonterminals)
         print(f"✅ Loaded {len(self.image_files)} valid images from {len(subdirs)} levels")
     
     @staticmethod
@@ -186,17 +195,18 @@ class MarioDataset(Dataset):
     #         return 45
 
     def __len__(self):
-        return len(self.image_files)
+        """返回有效的视频序列数量（不是原始样本数量）"""
+        return len(self.valid_starts)
     
     def __getitem__(self, idx):
-        """get the data sample of the specified index - optimized for large datasets"""
-        if idx >= len(self.image_files):
-            raise IndexError(f"Index {idx} out of range for dataset of size {len(self.image_files)}")
+        """get the data sample of the specified index - optimized for large datasets
+        注意：idx 是 valid_starts 中的索引，不是原始样本索引
+        """
+        if idx >= len(self.valid_starts):
+            raise IndexError(f"Index {idx} out of range for dataset of size {len(self.valid_starts)}")
 
-        if idx + self.num_frames >= len(self.image_files):
-            start_idx = len(self.image_files) - self.num_frames
-        else:
-            start_idx = idx
+        # 从 valid_starts 中获取真实的起始索引
+        start_idx = self.valid_starts[idx]
         end_idx = start_idx + self.num_frames
 
         # 构建单个视频序列
@@ -217,11 +227,8 @@ class MarioDataset(Dataset):
                 image = torch.zeros(3, self.image_size, self.image_size)
 
             # 获取动作
-            action = self.actions[cur_idx] if idx < len(self.actions) else 0
-            nonterminal = self.nonterminals[cur_idx] if idx < len(self.nonterminals) else False
-        # # batch_images, batch_actions, batch_nonterminals = MarioDataset.build_video_sequence_batch(image,action,nonterminal, current_start_indices,
-        #                                                                              num_frames)
-
+            action = self.actions[cur_idx] if cur_idx < len(self.actions) else 0
+            nonterminal = self.nonterminals[cur_idx] if cur_idx < len(self.nonterminals) else False
             video_images.append(image)
             video_actions.append(action)
             video_nonterminals.append(nonterminal)

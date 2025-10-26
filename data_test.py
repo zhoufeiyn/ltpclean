@@ -17,7 +17,7 @@ def train():
 
     device_obj = torch.device(device)
     # 使用多进程数据加载优化
-    dataset = MarioDataset(cfg.data_path, cfg.img_size, num_workers=8)
+    dataset = MarioDataset(cfg)
 
     # video sequence parameters
     num_frames = 13
@@ -47,41 +47,41 @@ def train():
     # 按batch_size分组处理
     num_valid_videos = len(valid_starts)
 
-    for epoch in range(epochs):
-
-
-        # 按batch处理 - 优化版本
-        for batch_start in range(0, num_valid_videos, batch_size):
-            batch_end = min(batch_start + batch_size, num_valid_videos)
-            current_batch_size = batch_end - batch_start
-
-            # 获取当前batch的起始索引
-            current_start_indices = valid_starts[batch_start:batch_end]
-
-
-            # 批量构建视频序列
-            batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(
-                dataset, current_start_indices, num_frames
-            )
-
-            # 如果batch不满，用最后一个视频复制补齐
-            if current_batch_size < batch_size:
-                last_video_images = batch_images[-1]
-                last_video_actions = batch_actions[-1]
-                last_video_nonterminals = batch_nonterminals[-1]
-
-                for _ in range(batch_size - current_batch_size):
-                    batch_images.append(last_video_images)
-                    batch_actions.append(last_video_actions)
-                    batch_nonterminals.append(last_video_nonterminals)
-
-            # 拼接成batch_tensor
-            batch_data = [
-                torch.cat(batch_images, dim=0).to(device_obj),
-                torch.cat(batch_actions, dim=0).to(device_obj),
-                torch.cat(batch_nonterminals, dim=0).to(device_obj)
-            ]
-            print(batch_data[1],batch_data[2])
+    # for epoch in range(epochs):
+    #
+    #
+    #     # 按batch处理 - 优化版本
+    #     for batch_start in range(0, num_valid_videos, batch_size):
+    #         batch_end = min(batch_start + batch_size, num_valid_videos)
+    #         current_batch_size = batch_end - batch_start
+    #
+    #         # 获取当前batch的起始索引
+    #         current_start_indices = valid_starts[batch_start:batch_end]
+    #
+    #
+    #         # 批量构建视频序列
+    #         batch_images, batch_actions, batch_nonterminals = build_video_sequence_batch(
+    #             dataset, current_start_indices, num_frames
+    #         )
+    #
+    #         # 如果batch不满，用最后一个视频复制补齐
+    #         if current_batch_size < batch_size:
+    #             last_video_images = batch_images[-1]
+    #             last_video_actions = batch_actions[-1]
+    #             last_video_nonterminals = batch_nonterminals[-1]
+    #
+    #             for _ in range(batch_size - current_batch_size):
+    #                 batch_images.append(last_video_images)
+    #                 batch_actions.append(last_video_actions)
+    #                 batch_nonterminals.append(last_video_nonterminals)
+    #
+    #         # 拼接成batch_tensor
+    #         batch_data = [
+    #             torch.cat(batch_images, dim=0).to(device_obj),
+    #             torch.cat(batch_actions, dim=0).to(device_obj),
+    #             torch.cat(batch_nonterminals, dim=0).to(device_obj)
+    #         ]
+    #         print(batch_data[1],batch_data[2])
 
 
             # # 扩展batch_size: [b, num_frames, channels, h, w] -> [b*16, num_frames, channels, h, w]
