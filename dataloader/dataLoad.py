@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
 from concurrent.futures import ProcessPoolExecutor
-from config.configTrain import train_sample
+
 from torchvision.transforms import InterpolationMode
 
 
@@ -18,10 +18,13 @@ class MarioDataset(Dataset):
      __getitem__  will return image and corresponding action"""
     """up to date: 2025-09-20 only load all frames in one directory,
      return array ofimages and actions"""
-    def __init__(self, data_path: str, image_size, num_workers=4):
-        self.data_path = data_path
-        self.image_size = image_size
-        self.num_workers = num_workers
+    # def __init__(self, data_path: str, image_size, num_workers=4, train_sample=1,num_frames=12):
+    def __init__(self, cfg):
+        self.data_path = cfg.data_path
+        self.image_size = cfg.image_size
+        self.num_workers_folders = cfg.num_workers_folders
+        self.train_sample = cfg.train_sample
+        self.num_frames = cfg.num_frames
         self.image_files = [] # image files path (xxx.png)
         self.actions = [] # action (0-255)
         self.nonterminals = []
@@ -53,7 +56,7 @@ class MarioDataset(Dataset):
         
         # 并行处理每个子目录，每个子目录内已按帧号排序
         with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
-            futures = [executor.submit(MarioDataset._scan_directory, subdir) for subdir in subdirs]
+            futures = [executor.submit(MarioDataset._scan_directory, subdir,self.train_sample) for subdir in subdirs]
             
             for future in futures:
                 files, actions, nonterminals = future.result()
@@ -63,8 +66,9 @@ class MarioDataset(Dataset):
         print(f"✅ Loaded {len(self.image_files)} valid images from {len(subdirs)} levels")
     
     @staticmethod
-    def _scan_directory(directory):
+    def _scan_directory(directory,train_sample):
         """扫描单个目录，返回文件路径和动作，按帧号排序"""
+
         file_data = []  # 存储(file_path, action, nonterminal, frame_num)的列表
         
         # 首先收集所有文件并按帧号排序
@@ -144,6 +148,7 @@ class MarioDataset(Dataset):
             nonterminal = False
         return action_mapped, nonterminal
 
+
     # @staticmethod
     # def _map_action_to_playgenaction_static(action: int) -> int:
     #     """静态方法版本的动作映射函数
@@ -187,22 +192,42 @@ class MarioDataset(Dataset):
         if idx >= len(self.image_files):
             raise IndexError(f"Index {idx} out of range for dataset of size {len(self.image_files)}")
         
-        # 加载图像 - 使用更高效的图像加载
-        image_path = self.image_files[idx]
-        try:
-            # 使用PIL的优化选项
-            image = Image.open(image_path).convert('RGB')
-            image = self.transform(image)
-        except Exception as e:
-            print(f"Error loading image {image_path}: {e}")
-            # 返回一个默认的黑色图像
-            image = torch.zeros(3, self.image_size, self.image_size)
-        
-        # 获取动作
-        action = self.actions[idx] if idx < len(self.actions) else 0
-        nonterminal = self.nonterminals[idx] if idx < len(self.nonterminals) else False
-        
-        return image, action, nonterminal
+        start_idx = idx
+        end_idx = start_idx + self.num_frames
+
+        # 构建单个视频序列
+        video_images = []
+        video_actions = []
+        video_nonterminals = []
+
+        for cur_idx in range(start_idx, end_idx):
+            # 加载图像 - 使用更高效的图像加载
+            image_path = self.image_files[cur_idx]
+            try:
+                # 使用PIL的优化选项
+                image = Image.open(image_path).convert('RGB')
+                image = self.transform(image)
+            except Exception as e:
+                print(f"Error loading image {image_path}: {e}")
+                # 返回一个默认的黑色图像
+                image = torch.zeros(3, self.image_size, self.image_size)
+
+            # 获取动作
+            action = self.actions[cur_idx] if idx < len(self.actions) else 0
+            nonterminal = self.nonterminals[cur_idx] if idx < len(self.nonterminals) else False
+        # # batch_images, batch_actions, batch_nonterminals = MarioDataset.build_video_sequence_batch(image,action,nonterminal, current_start_indices,
+        #                                                                              num_frames)
+
+            video_images.append(image)
+            video_actions.append(action)
+            video_nonterminals.append(nonterminal)
+
+        # 转换为tensor
+        images_tensor = torch.stack(video_images, dim=0)  # [num_frames, 3, 128, 128]
+        actions_tensor = torch.tensor(video_actions, dtype=torch.long).unsqueeze(-1)  # [num_frames, 1]
+        nonterminals_tensor = torch.tensor(video_nonterminals, dtype=torch.bool)  # [num_frames]
+
+        return images_tensor, actions_tensor, nonterminals_tensor
 
 
 def build_video_sequence_batch(dataset, start_indices, num_frames):

@@ -19,6 +19,9 @@ ckpt_path: str = "./ckpt"
 img_size = 256
 img_channel = 3
 base_ch: int = 64          # 减少基础通道数以适应GPU内存
+num_workers_folders=8
+num_workers = 8
+
 
 # Large dataset train
 num_frames: int = 12
@@ -28,7 +31,7 @@ loss_log_iter: int = 5  # loss数据print和保存至log日志的间隔 \log
 gif_save_epoch: int = 1  # avgloss和gif保存间隔 \output
 checkpoint_save_epoch: int = 1  # checkpoint保存间隔
 min_improvement: float = 0.15  # 最小改善幅度（15%）
-batch_size: int = 24       
+batch_size: int = 24
 epochs: int = 1          # 测试epoch数量
 
 sample_step: int = 20
