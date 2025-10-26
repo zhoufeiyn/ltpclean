@@ -12,8 +12,8 @@ resume_checkpoint_path = "ckpt/model_epoch8000_20251025_20.pth"  # 继续训练�
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
 out_dir: str = "./output"
-data_path: str = "/content/drive/MyDrive/mario_data/"
-# data_path = "./datatrain/"
+# data_path: str = "/content/drive/MyDrive/mario_data/"
+data_path = "./datatrain/"
 ckpt_path: str = "./ckpt"
 
 """Train Config"""
@@ -24,39 +24,39 @@ num_workers_folders=8
 num_workers = 32
 
 
-# Large dataset train
-num_frames: int = 12
-frame_interval: int = 4
-loss_log_iter: int = 5  # loss数据print和保存至log日志的间隔 \log
-# gif_save_iter: int = 400
-gif_save_epoch: int = 2  # avgloss和gif保存间隔 \output
-checkpoint_save_epoch: int = 2  # checkpoint保存间隔
-min_improvement: float = 0.15  # 最小改善幅度（15%）
-batch_size: int = 24
-epochs: int = 10          # 测试epoch数量
-
-sample_step: int = 20
-
-test_img_path1: str = "./eval_data/demo1.png"
-test_img_path2: str = "./eval_data/demo2.png"
-test_img_path3: str = "./eval_data/demo3.png"
-
-actions1 = ['r','r','r','r','r','r','r','r','r']
-actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj','rj']
-
-# # small dataset train
-# num_frames: int = 6
-# frame_interval: int = 6
-# loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
+# # Large dataset train
+# num_frames: int = 12
+# frame_interval: int = 4
+# loss_log_iter: int = 5  # loss数据print和保存至log日志的间隔 \log
 # # gif_save_iter: int = 400
-# gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
-# checkpoint_save_epoch: int = 1000  # checkpoint保存间隔
+# gif_save_epoch: int = 5  # avgloss和gif保存间隔 \output
+# checkpoint_save_epoch: int = 5  # checkpoint保存间隔
 # min_improvement: float = 0.15  # 最小改善幅度（15%）
-# batch_size: int = 2        # 单张图像过拟合
-# epochs: int = 15000          # 测试epoch数量
+# batch_size: int = 24
+# epochs: int = 30          # 测试epoch数量
 #
 # sample_step: int = 20
+#
 # test_img_path1: str = "./eval_data/demo1.png"
 # test_img_path2: str = "./eval_data/demo2.png"
-# actions1 = ['r','r','r','r','r','r']
-# actions2 = ['rj','rj','rj','rj','rj','rj']
+# test_img_path3: str = "./eval_data/demo3.png"
+#
+# actions1 = ['r','r','r','r','r','r','r','r','r']
+# actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj','rj']
+
+# small dataset train
+num_frames: int = 4
+frame_interval: int = 1
+loss_log_iter: int = 20  # loss数据print和保存至log日志的间隔 \log
+# gif_save_iter: int = 400
+gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
+checkpoint_save_epoch: int = 1000  # checkpoint保存间隔
+min_improvement: float = 0.15  # 最小改善幅度（15%）
+batch_size: int = 2        # 单张图像过拟合
+epochs: int = 15000          # 测试epoch数量
+
+sample_step: int = 20
+test_img_path1: str = "./eval_data/demo1.png"
+test_img_path2: str = "./eval_data/demo2.png"
+actions1 = ['r','r','r']
+actions2 = ['rj','rj','rj','rj','rj','rj']
