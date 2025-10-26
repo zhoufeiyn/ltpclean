@@ -12,8 +12,8 @@ resume_checkpoint_path = "ckpt/model_epoch8000_20251025_20.pth"  # 继续训练�
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
 out_dir: str = "./output"
-# data_path: str = "/content/drive/MyDrive/datatrain/"
-data_path = "./datatrain/"
+data_path: str = "/content/drive/MyDrive/mario_data/"
+# data_path = "./datatrain/"
 ckpt_path: str = "./ckpt"
 
 """Train Config"""
@@ -25,15 +25,15 @@ num_workers = 32
 
 
 # Large dataset train
-num_frames: int = 6
-frame_interval: int = 2
-loss_log_iter: int = 1  # loss数据print和保存至log日志的间隔 \log
+num_frames: int = 12
+frame_interval: int = 4
+loss_log_iter: int = 5  # loss数据print和保存至log日志的间隔 \log
 # gif_save_iter: int = 400
-gif_save_epoch: int = 1  # avgloss和gif保存间隔 \output
-checkpoint_save_epoch: int = 1  # checkpoint保存间隔
+gif_save_epoch: int = 2  # avgloss和gif保存间隔 \output
+checkpoint_save_epoch: int = 2  # checkpoint保存间隔
 min_improvement: float = 0.15  # 最小改善幅度（15%）
-batch_size: int = 4
-epochs: int = 1          # 测试epoch数量
+batch_size: int = 24
+epochs: int = 10          # 测试epoch数量
 
 sample_step: int = 20
 
