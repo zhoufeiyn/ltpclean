@@ -151,11 +151,13 @@ class MarioDataset(Dataset):
         else:
             action_mapped = None
         
+        # if match2:
+        #     nonterminal = int(match2.group(1))  # 修改：group(1)而不是group(2)
+        #     nonterminal = nonterminal == 1
+        # else:
+        #     nonterminal = False
         if match2:
-            nonterminal = int(match2.group(1))  # 修改：group(1)而不是group(2)
-            nonterminal = nonterminal == 1
-        else:
-            nonterminal = False
+            nonterminal = True
         return action_mapped, nonterminal
 
 
