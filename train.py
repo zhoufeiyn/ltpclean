@@ -283,6 +283,7 @@ def train():
     else:
         print("⚠️ Cannot find VAE model")
     epochs, batch_size = cfg.epochs, cfg.batch_size
+    gradient_accumulation_steps = cfg.gradient_accumulation_steps
 
     print("---1. start training----")
     print("---2. load dataset---")
@@ -298,6 +299,7 @@ def train():
     print(f"   - each video has {num_frames} frames")
     print(f"   - batch size: {batch_size}")
     print(f"   - batches per epoch: {num_batches}")
+    print(f"   - gradient accumulation steps: {gradient_accumulation_steps} (effective batch size: {batch_size * gradient_accumulation_steps})")
 
     # 初始化损失历史记录
     loss_history = []
@@ -306,6 +308,12 @@ def train():
     for epoch in range(start_epoch, epochs):
         total_loss = 0
         batch_count = 0
+        
+        # 梯度累积相关变量
+        accumulation_step = 0
+        
+        # 确保每个epoch开始时optimizer的梯度是清零的
+        opt.zero_grad()
 
         for batch_data in dataloder:
             batch_images, batch_actions, batch_nonterminals = batch_data
@@ -318,13 +326,23 @@ def train():
             try:
                 out_dict = model.df_model.training_step(batch_data)
                 loss = out_dict["loss"]  # 用loss还是original_loss??
-
-                # 反向传播
-                opt.zero_grad()
+                
+                # 将loss除以累积步数，以便梯度累积后等价于更大的batch size
+                loss = loss / gradient_accumulation_steps
+                
+                # 反向传播（累积梯度）
+                # PyTorch的backward()会将计算出的梯度加到参数的.grad属性上（累加而非替换）
+                # 这就是为什么梯度会自动累积的原因
                 loss.backward()
-                opt.step()
 
-                total_loss += loss.item()
+                accumulation_step += 1
+                
+                # 当累积步数达到设定值时，执行优化器更新
+                if accumulation_step % gradient_accumulation_steps == 0:
+                    opt.step()  # 执行参数更新
+                    opt.zero_grad()  # 清零梯度，准备下一轮累积
+
+                total_loss += loss.item() * gradient_accumulation_steps  # 修正累积损失值
                 batch_count += 1
 
 
@@ -338,11 +356,15 @@ def train():
 
             # 查看batch里的loss和 gif
             if batch_count % loss_log_iter == 0:
-                batch_loss = loss.item()
+                batch_loss = loss.item() * gradient_accumulation_steps  # 修正显示损失值
                 loss_message = f"Epoch {epoch + 1}/{epochs}, in batch: {batch_count},  Loss: {batch_loss:.6f}"
                 logger.info(loss_message)
 
-
+        # epoch结束时，检查是否有剩余的未更新的梯度
+        if accumulation_step % gradient_accumulation_steps != 0:
+            logger.info(f"Epoch {epoch + 1} ended with {accumulation_step % gradient_accumulation_steps} accumulated gradients, applying remaining update...")
+            opt.step()
+            opt.zero_grad()
 
         # # 5个epoch
         # if batch_count > 0 and (epoch + 1) % 5 == 0:
