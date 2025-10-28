@@ -7,7 +7,7 @@ vae_model = '/content/drive/MyDrive/my_models/1025sdxl/vae_epoch10_20251025_06.p
 
 """Resume Training Config"""
 resume_training = True  # 是否继续训练
-resume_checkpoint_path = "/content/drive/MyDrive/my_models/1026largeDATA_df/model_epoch20_20251027_07.pth"  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
+resume_checkpoint_path = "/content/drive/MyDrive/my_models/1026largeDATA_df/model_epoch60_20251028_06.pth"  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
 
 """Local Web"""
 file_path= '../eval_data/0-frameArray.txt'
@@ -33,7 +33,7 @@ gif_save_epoch: int = 5  # avgloss和gif保存间隔 \output
 checkpoint_save_epoch: int = 5  # checkpoint保存间隔
 min_improvement: float = 0.15  # 最小改善幅度（15%）
 batch_size: int = 24
-epochs: int = 60          # 测试epoch数量
+epochs: int = 130          # 测试epoch数量
 
 sample_step: int = 20
 
