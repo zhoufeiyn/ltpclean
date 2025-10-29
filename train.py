@@ -323,6 +323,14 @@ def train():
                 batch_nonterminals.to(device_obj)
             ]
             batch_data[0] = vae_encode(batch_data[0], vae, device_obj)
+
+            # 将batch重复2遍，增加数据量
+            # repeat(2, 1, 1, ...) 表示在第一个维度（batch维度）重复2次，其他维度不变
+            batch_data[0] = batch_data[0].repeat(2, 1, 1, 1, 1)  # images: [batch, frames, C, H, W]
+            batch_data[1] = batch_data[1].repeat(2, 1, 1)  # actions: [batch, frames, 1]
+            batch_data[2] = batch_data[2].repeat(2, 1)  # nonterminals: [batch, frames]
+            
+
             try:
                 out_dict = model.df_model.training_step(batch_data)
                 loss = out_dict["loss"]  # 用loss还是original_loss??

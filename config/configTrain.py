@@ -47,8 +47,8 @@ gradient_accumulation_steps: int = 4  # 梯度累积步数，用于模拟更大�
 # actions2 = ['rj','rj','rj','rj','rj','rj','rj','rj','rj']
 
 # small dataset train
-num_frames: int = 4
-frame_interval: int = 1
+num_frames: int = 24
+frame_interval: int = 24
 loss_log_iter: int = 50  # loss数据print和保存至log日志的间隔 \log
 # gif_save_iter: int = 400
 gif_save_epoch: int = 500  # avgloss和gif保存间隔 \output
