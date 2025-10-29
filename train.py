@@ -401,6 +401,10 @@ def train():
                        f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+            model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -443,6 +447,10 @@ def train():
                    f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir='output')
         model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                    f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir='output')
+        model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+        model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
