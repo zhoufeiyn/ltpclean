@@ -264,7 +264,6 @@ def train():
     # 获取VAE和Diffusion模型
     vae = SDVAE().to(device_obj)
 
-
     # 加载您自己训练的VAE权重
     custom_vae_path = cfg.vae_model
     if custom_vae_path and os.path.exists(custom_vae_path):
@@ -292,26 +291,28 @@ def train():
     if total_video_sequences < 1:
         print(f"❌ dataset not enough: no valid video sequences")
         return
-    
+
     num_batches = (total_video_sequences + batch_size - 1) // batch_size
     print(f"📊 Dataset info:")
     print(f"   - valid video sequences: {total_video_sequences}")
     print(f"   - each video has {num_frames} frames")
     print(f"   - batch size: {batch_size}")
     print(f"   - batches per epoch: {num_batches}")
-    print(f"   - gradient accumulation steps: {gradient_accumulation_steps} (effective batch size: {batch_size * gradient_accumulation_steps})")
+    print(
+        f"   - gradient accumulation steps: {gradient_accumulation_steps} (effective batch size: {batch_size * gradient_accumulation_steps})")
 
     # 初始化损失历史记录
     loss_history = []
     final_avg_loss = 0  # 用于保存最终的avg_loss
+    avg_loss = 0  # 初始化avg_loss，避免UnboundLocalError
 
     for epoch in range(start_epoch, epochs):
         total_loss = 0
         batch_count = 0
-        
+
         # 梯度累积相关变量
         accumulation_step = 0
-        
+
         # 确保每个epoch开始时optimizer的梯度是清零的
         opt.zero_grad()
 
@@ -326,25 +327,24 @@ def train():
 
             # 将batch重复2遍，增加数据量
             # repeat(2, 1, 1, ...) 表示在第一个维度（batch维度）重复2次，其他维度不变
-            batch_data[0] = batch_data[0].repeat(2, 1, 1, 1, 1)  # images: [batch, frames, C, H, W]
-            batch_data[1] = batch_data[1].repeat(2, 1, 1)  # actions: [batch, frames, 1]
-            batch_data[2] = batch_data[2].repeat(2, 1)  # nonterminals: [batch, frames]
-            
+            batch_data[0] = batch_data[0].repeat(14, 1, 1, 1, 1)  # images: [batch, frames, C, H, W]
+            batch_data[1] = batch_data[1].repeat(14, 1, 1)  # actions: [batch, frames, 1]
+            batch_data[2] = batch_data[2].repeat(14, 1)  # nonterminals: [batch, frames]
 
             try:
                 out_dict = model.df_model.training_step(batch_data)
                 loss = out_dict["loss"]  # 用loss还是original_loss??
-                
+
                 # 将loss除以累积步数，以便梯度累积后等价于更大的batch size
                 loss = loss / gradient_accumulation_steps
-                
+
                 # 反向传播（累积梯度）
                 # PyTorch的backward()会将计算出的梯度加到参数的.grad属性上（累加而非替换）
                 # 这就是为什么梯度会自动累积的原因
                 loss.backward()
 
                 accumulation_step += 1
-                
+
                 # 当累积步数达到设定值时，执行优化器更新
                 if accumulation_step % gradient_accumulation_steps == 0:
                     opt.step()  # 执行参数更新
@@ -370,13 +370,14 @@ def train():
 
         # epoch结束时，检查是否有剩余的未更新的梯度
         if accumulation_step % gradient_accumulation_steps != 0:
-            logger.info(f"Epoch {epoch + 1} ended with {accumulation_step % gradient_accumulation_steps} accumulated gradients, applying remaining update...")
+            logger.info(
+                f"Epoch {epoch + 1} ended with {accumulation_step % gradient_accumulation_steps} accumulated gradients, applying remaining update...")
             opt.step()
             opt.zero_grad()
 
         # # 5个epoch
-        # if batch_count > 0 and (epoch + 1) % 5 == 0:
-        if batch_count > 0:
+        if batch_count > 0 and (epoch + 1) % 5 == 0:
+            # if batch_count > 0:
             avg_loss = total_loss / batch_count
             # scheduler.step(avg_loss)
             final_avg_loss = avg_loss  # 更新最终的avg_loss
@@ -396,8 +397,8 @@ def train():
         # 每gif_save_epoch个epoch run一次test,保存 gif
         if (epoch + 1) % gif_save_epoch == 0:
             # 确保output目录存在
-            model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
             model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
 
@@ -447,8 +448,8 @@ def train():
         print(f"    total batches: {batch_count * epochs}")
         logger.info(stats_message)
 
-        model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir=cfg.out_dir)
         model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
                    f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir=cfg.out_dir)
 
