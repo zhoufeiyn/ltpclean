@@ -388,23 +388,28 @@ def train():
         # 每gif_save_epoch个epoch run一次test,保存 gif
         if (epoch + 1) % gif_save_epoch == 0:
             # 确保output目录存在
-
             model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
+                       f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
             model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
-            model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
+
+            ## large data
+            # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+            # model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+            #            f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
 
         # 每checkpoint_save_epoch个epoch保存一次checkpoint
         if (epoch + 1) % checkpoint_save_epoch == 0:
@@ -434,23 +439,28 @@ def train():
         print(f"    total batches: {batch_count * epochs}")
         logger.info(stats_message)
 
-        # 训练完成后进行测试
         model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
-        model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
-        model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r', epoch='result', output_dir='output')
+                   f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir=cfg.out_dir)
         model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir='output')
-        model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir='output')
-        model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
-        model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+                   f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir=cfg.out_dir)
+
+        # # 训练完成后进行测试
+        # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_r', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path1, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path1[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_r', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path2[-9:-4]}_result_{epochs}_rj', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path4, cfg.actions1, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
+        # model_test(cfg.test_img_path4, cfg.actions2, model, vae, device_obj, cfg.sample_step,
+        #            f'{cfg.test_img_path4[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
 
     # 保存最终损失曲线到output目录
     if len(loss_history) > 0:
