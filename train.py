@@ -396,7 +396,8 @@ def train():
             model_test(cfg.test_img_path2, cfg.actions1, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
+                       f
+            '{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path3, cfg.actions1, model, vae, device_obj, cfg.sample_step,
                        f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir='output')
             model_test(cfg.test_img_path3, cfg.actions2, model, vae, device_obj, cfg.sample_step,
