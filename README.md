@@ -8,11 +8,9 @@ A generative AI framework for game learning and interactive world creation
 
 ![Model Structure](./statics/structure.png)
 
-> **Note**: This project is based on the [Playable Game Generation](https://github.com/GreatX3/Playable-Game-Generation) framework by GreatX3.
-
 ### ⭐️ Introduction  
 
-We built and trained a generative game model that combines a **VAE** with a **Diffusion-Forcing** architecture enhanced by **recurrent-style hidden states** for **long-horizon temporal coherence**. This project began in August 2025, leveraging both real player gameplay and AI-agent trajectories to collect over 100,000 Super Mario gameplay frames, significantly improving temporal memory, action consistency, and generalization capability across diverse game scenes.  
+We built and trained a generative game model that combines a **VAE** with a **Diffusion-Forcing** architecture enhanced by **recurrent-style hidden states** for **long-horizon temporal coherence**. The project began in **August 2025** and has since collected over 100,000 Super Mario gameplay frames, leveraging both **real player** gameplay and **AI-agent** trajectories. These data significantly improve the model’s temporal memory, action consistency, and generalization capability across diverse game scenes. 
 ➡️ [Hugging Face Dataset: mario_data](https://huggingface.co/datasets/FeiyanZhou/mario_data)
 
 - ✅ Real-time generation: **16 FPS**
@@ -26,10 +24,10 @@ We built and trained a generative game model that combines a **VAE** with a **Di
 <div align="center">
 
 ### 🎬 Short Sequence (36 frames)
-<img src="./output/pre/36_frame_infer.gif" width="600"/>
+<img src="./stactics/pre/36_frame_infer.gif" width="600"/>
 
 ### 🕒 Long Sequence Rollout (1min30s)
-<img src="./output/pre/longseq_infer.gif" width="520"/>
+<img src="./stactics/pre/longseq_infer.gif" width="520"/>
 
 </div>
 
@@ -94,3 +92,5 @@ This project is currently under active development. The following components are
 - **Data Collection**: Automated gameplay data gathering through AI agent interactions
 - **Model Optimization**: Continuous improvement of VAE and Diffusion DiT architectures
 - **Performance Evaluation**: Comprehensive testing and validation of generated content quality
+
+> **Note**: This project is based on the [Playable Game Generation](https://github.com/GreatX3/Playable-Game-Generation) framework by GreatX3.
