@@ -24,10 +24,10 @@ We built and trained a generative game model that combines a **VAE** with a **Di
 <div align="center">
 
 ### 🎬 Short Sequence (36 frames)
-<img src="./stactics/pre/36_frame_infer.gif" width="600"/>
+<img src="./statics/pre/36_frame_infer.gif" width="600"/>
 
 ### 🕒 Long Sequence Rollout (1min30s)
-<img src="./stactics/pre/longseq_infer.gif" width="520"/>
+<img src="./statics/pre/longseq_infer.gif" width="520"/>
 
 </div>
 
