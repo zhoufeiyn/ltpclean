@@ -399,8 +399,8 @@ def train():
             # 确保output目录存在
             # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
             #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch=epoch + 1, output_dir=cfg.out_dir)
-            model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                       f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
+            model_test(cfg.test_img_path3, cfg.actions3, model, vae, device_obj, cfg.sample_step,
+                       f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch=epoch + 1, output_dir=cfg.out_dir)
 
             ## large data
             # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
@@ -450,8 +450,8 @@ def train():
 
         # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,
         #            f'{cfg.test_img_path1[-9:-4]}_epoch{epoch + 1}_r', epoch='result', output_dir=cfg.out_dir)
-        model_test(cfg.test_img_path2, cfg.actions2, model, vae, device_obj, cfg.sample_step,
-                   f'{cfg.test_img_path2[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir=cfg.out_dir)
+        model_test(cfg.test_img_path3, cfg.actions3, model, vae, device_obj, cfg.sample_step,
+                   f'{cfg.test_img_path3[-9:-4]}_epoch{epoch + 1}_rj', epoch='result', output_dir=cfg.out_dir)
 
         # # 训练完成后进行测试
         # model_test(cfg.test_img_path1, cfg.actions1, model, vae, device_obj, cfg.sample_step,

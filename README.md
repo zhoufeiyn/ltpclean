@@ -1,8 +1,8 @@
-# <div align="center">
-
-# Learning to Play
-
-</div>
+<h1 align="center">🎮 Learning to Play 🎮</h1>
+<p align="center">
+A generative AI framework for game learning and interactive world creation
+</p>
+<hr>
 
 
 
@@ -11,6 +11,29 @@
 This project implements a game generation model based on VAE and Diffusion DiT for generating playable game content.
 
 > **Note**: This project is based on the [Playable Game Generation](https://github.com/GreatX3/Playable-Game-Generation) framework by GreatX3.
+
+### ⭐️ Introduction  
+
+This project began in **August 2025**. We use both **real player gameplay** and **AI-agent trajectories** to produce over **100,000 Super Mario gameplay frames**, improving the model’s temporal memory and generalization capabilities.  
+➡️ [Hugging Face Dataset: mario_data](https://huggingface.co/datasets/FeiyanZhou/mario_data)
+
+- ✅ Real-time generation: **16 FPS**
+- 🎮 Continuous gameplay generation: **>2 minutes**
+- 🧠 Architecture: Diffusion-Forcing + Memory + SDXL-VAE (×8 latent downsampling)
+
+> Some small objects (Mario, Goombas) appear slightly blurry due to the ×8 latent compression in the SDXL-VAE. We are actively enlarging the dataset and refining trajectories to enhance detail fidelity and complex action reproduction.
+
+# 📹 Demo Display
+
+<div align="center">
+
+### 🎬 Short Sequence (36 frames)
+<img src="./output/pre/36_frame_infer.gif" width="420"/>
+
+### 🕒 Long Sequence Rollout
+<img src="./output/pre/longseq_infer.gif" width="420"/>
+
+</div>
 
 # 🏭 Environment Setup
 
