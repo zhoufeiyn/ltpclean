@@ -28,10 +28,10 @@ This project began in **August 2025**. We use both **real player gameplay** and 
 <div align="center">
 
 ### 🎬 Short Sequence (36 frames)
-<img src="./output/pre/36_frame_infer.gif" width="420"/>
+<img src="./output/pre/36_frame_infer.gif" width="600"/>
 
-### 🕒 Long Sequence Rollout
-<img src="./output/pre/longseq_infer.gif" width="420"/>
+### 🕒 Long Sequence Rollout (1min30s)
+<img src="./output/pre/longseq_infer.gif" width="520"/>
 
 </div>
 
