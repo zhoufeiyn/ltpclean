@@ -8,13 +8,11 @@ A generative AI framework for game learning and interactive world creation
 
 ![Model Structure](./statics/structure.png)
 
-This project implements a game generation model based on VAE and Diffusion DiT for generating playable game content.
-
 > **Note**: This project is based on the [Playable Game Generation](https://github.com/GreatX3/Playable-Game-Generation) framework by GreatX3.
 
 ### ⭐️ Introduction  
 
-This project began in **August 2025**. We use both **real player gameplay** and **AI-agent trajectories** to produce over **100,000 Super Mario gameplay frames**, improving the model’s temporal memory and generalization capabilities.  
+We built and trained a generative game model that combines a **VAE** with a **Diffusion-Forcing** architecture enhanced by **recurrent-style hidden states** for **long-horizon temporal coherence**. This project began in August 2025, leveraging both real player gameplay and AI-agent trajectories to collect over 100,000 Super Mario gameplay frames, significantly improving temporal memory, action consistency, and generalization capability across diverse game scenes.  
 ➡️ [Hugging Face Dataset: mario_data](https://huggingface.co/datasets/FeiyanZhou/mario_data)
 
 - ✅ Real-time generation: **16 FPS**
