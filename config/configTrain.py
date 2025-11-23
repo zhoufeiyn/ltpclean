@@ -5,14 +5,14 @@ out_dir: str = "./output"
 # data_path: str = "./datatrain/"
 data_path = "./mario_data/mariodata/"
 ckpt_path: str = "./ckpt"
-model_path = "model_epoch55_20251116_07.pth" # infer或者load pretrain权重时候用
+model_path = "model_epoch155_20251116_07.pth" # infer或者load pretrain权重时候用
 device = 'cuda:0'
 # vae_model = '/content/drive/MyDrive/my_models/1025sdxl/vae_epoch10_20251025_06.pth'
 vae_model = './ckpt/VAE/vae_epoch6_20251112_03.pth'
 
 """Resume Training Config"""
-resume_training = False  # 是否继续训练
-resume_checkpoint_path = "/content/drive/MyDrive/my_models/1026largeDATA_df/model_epoch110_20251028_23.pth"  # 继续训练的checkpoint路径，例如: "ckpt/model_epoch100_20251018_19.pth"
+resume_training = True  # 是否继续训练
+resume_checkpoint_path = "./ckpt/model_epoch55_20251116_07.pth"
 
 """Local Web"""
 file_path= './eval_data/0-frameArray1.txt'
