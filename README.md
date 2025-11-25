@@ -12,7 +12,7 @@ A generative AI framework for game learning and interactive world creation
 
 We built and trained a generative game model that combines a **VAE** with a **Diffusion-Forcing** architecture enhanced by **recurrent-style hidden states** for **long-horizon temporal coherence**. 
 
-The project began in **August 2025** and has since collected over 400,000 Super Mario gameplay frames, leveraging both **real player** gameplay and **AI-agent** trajectories. These data significantly improve the model’s temporal memory, action consistency, and generalization capability across diverse game scenes. 
+The project began in **August 2025** and has since collected over 522,000 Super Mario gameplay frames, leveraging both **real player** gameplay and **AI-agent** trajectories. These data significantly improve the model’s temporal memory, action consistency, and generalization capability across diverse game scenes. 
 ➡️ [Hugging Face Dataset: mario_data](https://huggingface.co/datasets/FeiyanZhou/mario_data)
 
 - ✅ Real-time generation: **16 FPS**
@@ -29,7 +29,7 @@ The project began in **August 2025** and has since collected over 400,000 Super 
 <img src="./statics/pre/36_frame_infer.gif" width="600"/>
 
 ### 🕒 Long Sequence Rollout (1min30s)
-<img src="./statics/pre/longseq_infer.gif" width="520"/>
+<img src="./statics/pre/game_full_high.gif" width="520"/>
 
 </div>
 
